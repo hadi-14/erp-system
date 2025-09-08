@@ -1,0 +1,1005 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id         Int       @id @default(autoincrement())
+  email      String    @unique @db.VarChar(255)
+  otp_code   String?   @db.VarChar(6)
+  otp_expiry DateTime? @db.Timestamp(6)
+  role       role_enum @default(USER)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  password   String?   @db.VarChar(255)
+}
+
+model reports {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  url       String
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model orders_cn {
+  orderRateInfo_sellerRateStatus                 BigInt?  @map("orderRateInfo.sellerRateStatus")
+  orderRateInfo_buyerRateStatus                  BigInt?  @map("orderRateInfo.buyerRateStatus")
+  tradeTerms_phase                               Float?   @map("tradeTerms.phase")
+  tradeTerms_payWayDesc                          String?  @map("tradeTerms.payWayDesc")
+  tradeTerms_expressPay                          Boolean? @map("tradeTerms.expressPay")
+  tradeTerms_payTime                             String?  @map("tradeTerms.payTime")
+  tradeTerms_payStatusDesc                       String?  @map("tradeTerms.payStatusDesc")
+  tradeTerms_payWay                              String?  @map("tradeTerms.payWay")
+  tradeTerms_cardPay                             Boolean? @map("tradeTerms.cardPay")
+  tradeTerms_payStatus                           String?  @map("tradeTerms.payStatus")
+  tradeTerms_phasAmount                          Float?   @map("tradeTerms.phasAmount")
+  nativeLogistics_zip                            String?  @map("nativeLogistics.zip")
+  nativeLogistics_area                           String?  @map("nativeLogistics.area")
+  nativeLogistics_address                        String?  @map("nativeLogistics.address")
+  nativeLogistics_town                           String?  @map("nativeLogistics.town")
+  nativeLogistics_city                           String?  @map("nativeLogistics.city")
+  nativeLogistics_townCode                       String?  @map("nativeLogistics.townCode")
+  nativeLogistics_contactPerson                  String?  @map("nativeLogistics.contactPerson")
+  nativeLogistics_areaCode                       String?  @map("nativeLogistics.areaCode")
+  nativeLogistics_province                       String?  @map("nativeLogistics.province")
+  nativeLogistics_privacyProtection              Boolean? @map("nativeLogistics.privacyProtection")
+  baseInfo_businessType                          String?  @map("baseInfo.businessType")
+  baseInfo_buyerID                               String?  @map("baseInfo.buyerID")
+  baseInfo_createTime                            String?  @map("baseInfo.createTime")
+  baseInfo_id                                    BigInt?  @map("baseInfo.id")
+  baseInfo_modifyTime                            String?  @map("baseInfo.modifyTime")
+  baseInfo_payTime                               String?  @map("baseInfo.payTime")
+  baseInfo_refund                                BigInt?  @map("baseInfo.refund")
+  baseInfo_sellerID                              String?  @map("baseInfo.sellerID")
+  baseInfo_shippingFee                           Float?   @map("baseInfo.shippingFee")
+  baseInfo_status                                String?  @map("baseInfo.status")
+  baseInfo_totalAmount                           Float?   @map("baseInfo.totalAmount")
+  baseInfo_discount                              BigInt?  @map("baseInfo.discount")
+  baseInfo_buyerContact_phone                    String?  @map("baseInfo.buyerContact.phone")
+  baseInfo_buyerContact_email                    String?  @map("baseInfo.buyerContact.email")
+  baseInfo_buyerContact_imInPlatform             String?  @map("baseInfo.buyerContact.imInPlatform")
+  baseInfo_buyerContact_name                     String?  @map("baseInfo.buyerContact.name")
+  baseInfo_buyerContact_companyName              String?  @map("baseInfo.buyerContact.companyName")
+  baseInfo_sellerContact_phone                   String?  @map("baseInfo.sellerContact.phone")
+  baseInfo_sellerContact_imInPlatform            String?  @map("baseInfo.sellerContact.imInPlatform")
+  baseInfo_sellerContact_name                    String?  @map("baseInfo.sellerContact.name")
+  baseInfo_sellerContact_mobile                  String?  @map("baseInfo.sellerContact.mobile")
+  baseInfo_sellerContact_companyName             String?  @map("baseInfo.sellerContact.companyName")
+  baseInfo_tradeType                             String?  @map("baseInfo.tradeType")
+  baseInfo_refundPayment                         BigInt?  @map("baseInfo.refundPayment")
+  baseInfo_idOfStr                               String?  @map("baseInfo.idOfStr")
+  baseInfo_alipayTradeId                         String?  @map("baseInfo.alipayTradeId")
+  baseInfo_receiverInfo_toDivisionCode           String?  @map("baseInfo.receiverInfo.toDivisionCode")
+  baseInfo_receiverInfo_toTownCode               String?  @map("baseInfo.receiverInfo.toTownCode")
+  baseInfo_receiverInfo_toFullName               String?  @map("baseInfo.receiverInfo.toFullName")
+  baseInfo_receiverInfo_toArea                   String?  @map("baseInfo.receiverInfo.toArea")
+  baseInfo_receiverInfo_toPost                   String?  @map("baseInfo.receiverInfo.toPost")
+  baseInfo_buyerLoginId                          String?  @map("baseInfo.buyerLoginId")
+  baseInfo_sellerLoginId                         String?  @map("baseInfo.sellerLoginId")
+  baseInfo_buyerUserId                           BigInt?  @map("baseInfo.buyerUserId")
+  baseInfo_sellerUserId                          BigInt?  @map("baseInfo.sellerUserId")
+  baseInfo_buyerAlipayId                         String?  @map("baseInfo.buyerAlipayId")
+  baseInfo_sellerAlipayId                        String?  @map("baseInfo.sellerAlipayId")
+  baseInfo_sumProductPayment                     Float?   @map("baseInfo.sumProductPayment")
+  baseInfo_stepPayAll                            Boolean? @map("baseInfo.stepPayAll")
+  baseInfo_overSeaOrder                          Boolean? @map("baseInfo.overSeaOrder")
+  orderBizInfo_odsCyd                            Boolean? @map("orderBizInfo.odsCyd")
+  orderBizInfo_creditOrder                       Boolean? @map("orderBizInfo.creditOrder")
+  orderBizInfo_creditOrderDetail_payAmount       Float?   @map("orderBizInfo.creditOrderDetail.payAmount")
+  orderBizInfo_creditOrderDetail_createTime      String?  @map("orderBizInfo.creditOrderDetail.createTime")
+  orderBizInfo_creditOrderDetail_status          String?  @map("orderBizInfo.creditOrderDetail.status")
+  orderBizInfo_creditOrderDetail_statusStr       String?  @map("orderBizInfo.creditOrderDetail.statusStr")
+  orderBizInfo_creditOrderDetail_restRepayAmount Float?   @map("orderBizInfo.creditOrderDetail.restRepayAmount")
+  orderBizInfo_dropshipping                      Boolean? @map("orderBizInfo.dropshipping")
+  orderBizInfo_shippingInsurance                 String?  @map("orderBizInfo.shippingInsurance")
+  orderBizInfo_fz                                Boolean? @map("orderBizInfo.fz")
+  orderBizInfo_tgOfficialPickUp                  Boolean? @map("orderBizInfo.tgOfficialPickUp")
+  productItems_itemAmount                        Float?   @map("productItems.itemAmount")
+  productItems_name                              String?  @map("productItems.name")
+  productItems_price                             Float?   @map("productItems.price")
+  productItems_productID                         BigInt?  @map("productItems.productID")
+  productItems_productImgUrl                     String?  @map("productItems.productImgUrl")
+  productItems_productSnapshotUrl                String?  @map("productItems.productSnapshotUrl")
+  productItems_quantity                          BigInt?  @map("productItems.quantity")
+  productItems_refund                            BigInt?  @map("productItems.refund")
+  productItems_skuID                             BigInt?  @map("productItems.skuID")
+  productItems_status                            String?  @map("productItems.status")
+  productItems_subItemID                         BigInt?  @map("productItems.subItemID")
+  productItems_type                              String?  @map("productItems.type")
+  productItems_unit                              String?  @map("productItems.unit")
+  productItems_guaranteesTerms                   String?  @map("productItems.guaranteesTerms")
+  productItems_productCargoNumber                String?  @map("productItems.productCargoNumber")
+  productItems_skuInfos                          String?  @map("productItems.skuInfos")
+  productItems_entryDiscount                     BigInt?  @map("productItems.entryDiscount")
+  productItems_specId                            String?  @map("productItems.specId")
+  productItems_quantityFactor                    BigInt?  @map("productItems.quantityFactor")
+  productItems_statusStr                         String?  @map("productItems.statusStr")
+  productItems_sharePostage                      Float?   @map("productItems.sharePostage")
+  baseInfo_allDeliveredTime                      String?  @map("baseInfo.allDeliveredTime")
+  productItems_cargoNumber                       String?  @map("productItems.cargoNumber")
+  baseInfo_completeTime                          String?  @map("baseInfo.completeTime")
+  baseInfo_closeReason                           String?  @map("baseInfo.closeReason")
+  baseInfo_sellerContact_email                   String?  @map("baseInfo.sellerContact.email")
+  baseInfo_remark                                String?  @map("baseInfo.remark")
+  baseInfo_buyerFeedback                         String?  @map("baseInfo.buyerFeedback")
+
+  @@map("1688_orders_cn")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model orders_en {
+  orderRateInfo_sellerRateStatus                 BigInt?   @map("orderRateInfo.sellerRateStatus")
+  orderRateInfo_buyerRateStatus                  BigInt?   @map("orderRateInfo.buyerRateStatus")
+  tradeTerms_phase                               String?   @map("tradeTerms.phase")
+  tradeTerms_payWayDesc                          String?   @map("tradeTerms.payWayDesc")
+  tradeTerms_expressPay                          Boolean?  @map("tradeTerms.expressPay")
+  tradeTerms_payTime                             String?   @map("tradeTerms.payTime")
+  tradeTerms_payStatusDesc                       String?   @map("tradeTerms.payStatusDesc")
+  tradeTerms_payWay                              String?   @map("tradeTerms.payWay")
+  tradeTerms_cardPay                             Boolean?  @map("tradeTerms.cardPay")
+  tradeTerms_payStatus                           String?   @map("tradeTerms.payStatus")
+  tradeTerms_phasAmount                          Float?    @map("tradeTerms.phasAmount")
+  nativeLogistics_zip                            String?   @map("nativeLogistics.zip")
+  nativeLogistics_area                           String?   @map("nativeLogistics.area")
+  nativeLogistics_address                        String?   @map("nativeLogistics.address")
+  nativeLogistics_town                           String?   @map("nativeLogistics.town")
+  nativeLogistics_city                           String?   @map("nativeLogistics.city")
+  nativeLogistics_townCode                       String?   @map("nativeLogistics.townCode")
+  nativeLogistics_contactPerson                  String?   @map("nativeLogistics.contactPerson")
+  nativeLogistics_areaCode                       String?   @map("nativeLogistics.areaCode")
+  nativeLogistics_province                       String?   @map("nativeLogistics.province")
+  nativeLogistics_privacyProtection              Boolean?  @map("nativeLogistics.privacyProtection")
+  baseInfo_businessType                          String?   @map("baseInfo.businessType")
+  baseInfo_buyerID                               String?   @map("baseInfo.buyerID")
+  baseInfo_createTime                            DateTime? @map("baseInfo.createTime") @db.Timestamptz(6)
+  baseInfo_id                                    BigInt?   @map("baseInfo.id")
+  baseInfo_modifyTime                            DateTime? @map("baseInfo.modifyTime") @db.Timestamptz(6)
+  baseInfo_payTime                               DateTime? @map("baseInfo.payTime") @db.Timestamptz(6)
+  baseInfo_refund                                BigInt?   @map("baseInfo.refund")
+  baseInfo_sellerID                              String?   @map("baseInfo.sellerID")
+  baseInfo_shippingFee                           Float?    @map("baseInfo.shippingFee")
+  baseInfo_status                                String?   @map("baseInfo.status")
+  baseInfo_totalAmount                           Float?    @map("baseInfo.totalAmount")
+  baseInfo_discount                              BigInt?   @map("baseInfo.discount")
+  baseInfo_buyerContact_phone                    String?   @map("baseInfo.buyerContact.phone")
+  baseInfo_buyerContact_email                    String?   @map("baseInfo.buyerContact.email")
+  baseInfo_buyerContact_imInPlatform             String?   @map("baseInfo.buyerContact.imInPlatform")
+  baseInfo_buyerContact_name                     String?   @map("baseInfo.buyerContact.name")
+  baseInfo_buyerContact_companyName              String?   @map("baseInfo.buyerContact.companyName")
+  baseInfo_sellerContact_phone                   String?   @map("baseInfo.sellerContact.phone")
+  baseInfo_sellerContact_imInPlatform            String?   @map("baseInfo.sellerContact.imInPlatform")
+  baseInfo_sellerContact_name                    String?   @map("baseInfo.sellerContact.name")
+  baseInfo_sellerContact_mobile                  String?   @map("baseInfo.sellerContact.mobile")
+  baseInfo_sellerContact_companyName             String?   @map("baseInfo.sellerContact.companyName")
+  baseInfo_tradeType                             String?   @map("baseInfo.tradeType")
+  baseInfo_refundPayment                         BigInt?   @map("baseInfo.refundPayment")
+  baseInfo_idOfStr                               String?   @map("baseInfo.idOfStr")
+  baseInfo_alipayTradeId                         String?   @map("baseInfo.alipayTradeId")
+  baseInfo_receiverInfo_toDivisionCode           String?   @map("baseInfo.receiverInfo.toDivisionCode")
+  baseInfo_receiverInfo_toTownCode               String?   @map("baseInfo.receiverInfo.toTownCode")
+  baseInfo_receiverInfo_toFullName               String?   @map("baseInfo.receiverInfo.toFullName")
+  baseInfo_receiverInfo_toArea                   String?   @map("baseInfo.receiverInfo.toArea")
+  baseInfo_receiverInfo_toPost                   String?   @map("baseInfo.receiverInfo.toPost")
+  baseInfo_buyerLoginId                          String?   @map("baseInfo.buyerLoginId")
+  baseInfo_sellerLoginId                         String?   @map("baseInfo.sellerLoginId")
+  baseInfo_buyerUserId                           BigInt?   @map("baseInfo.buyerUserId")
+  baseInfo_sellerUserId                          BigInt?   @map("baseInfo.sellerUserId")
+  baseInfo_buyerAlipayId                         String?   @map("baseInfo.buyerAlipayId")
+  baseInfo_sellerAlipayId                        String?   @map("baseInfo.sellerAlipayId")
+  baseInfo_sumProductPayment                     Float?    @map("baseInfo.sumProductPayment")
+  baseInfo_stepPayAll                            Boolean?  @map("baseInfo.stepPayAll")
+  baseInfo_overSeaOrder                          Boolean?  @map("baseInfo.overSeaOrder")
+  orderBizInfo_odsCyd                            Boolean?  @map("orderBizInfo.odsCyd")
+  orderBizInfo_creditOrder                       Boolean?  @map("orderBizInfo.creditOrder")
+  orderBizInfo_creditOrderDetail_payAmount       Float?    @map("orderBizInfo.creditOrderDetail.payAmount")
+  orderBizInfo_creditOrderDetail_createTime      String?   @map("orderBizInfo.creditOrderDetail.createTime")
+  orderBizInfo_creditOrderDetail_status          String?   @map("orderBizInfo.creditOrderDetail.status")
+  orderBizInfo_creditOrderDetail_statusStr       String?   @map("orderBizInfo.creditOrderDetail.statusStr")
+  orderBizInfo_creditOrderDetail_restRepayAmount Float?    @map("orderBizInfo.creditOrderDetail.restRepayAmount")
+  orderBizInfo_dropshipping                      Boolean?  @map("orderBizInfo.dropshipping")
+  orderBizInfo_shippingInsurance                 String?   @map("orderBizInfo.shippingInsurance")
+  orderBizInfo_fz                                Boolean?  @map("orderBizInfo.fz")
+  orderBizInfo_tgOfficialPickUp                  Boolean?  @map("orderBizInfo.tgOfficialPickUp")
+  productItems_itemAmount                        Float?    @map("productItems.itemAmount")
+  productItems_name                              String?   @map("productItems.name")
+  productItems_price                             Float?    @map("productItems.price")
+  productItems_productID                         BigInt?   @map("productItems.productID")
+  productItems_productImgUrl                     String?   @map("productItems.productImgUrl")
+  productItems_productSnapshotUrl                String?   @map("productItems.productSnapshotUrl")
+  productItems_quantity                          BigInt?   @map("productItems.quantity")
+  productItems_refund                            BigInt?   @map("productItems.refund")
+  productItems_skuID                             BigInt?   @map("productItems.skuID")
+  productItems_status                            String?   @map("productItems.status")
+  productItems_subItemID                         BigInt?   @map("productItems.subItemID")
+  productItems_type                              String?   @map("productItems.type")
+  productItems_unit                              String?   @map("productItems.unit")
+  productItems_guaranteesTerms                   String?   @map("productItems.guaranteesTerms")
+  productItems_productCargoNumber                String?   @map("productItems.productCargoNumber")
+  productItems_skuInfos                          String?   @map("productItems.skuInfos")
+  productItems_entryDiscount                     BigInt?   @map("productItems.entryDiscount")
+  productItems_specId                            String?   @map("productItems.specId")
+  productItems_quantityFactor                    BigInt?   @map("productItems.quantityFactor")
+  productItems_statusStr                         String?   @map("productItems.statusStr")
+  productItems_sharePostage                      Float?    @map("productItems.sharePostage")
+  baseInfo_allDeliveredTime                      DateTime? @map("baseInfo.allDeliveredTime") @db.Timestamptz(6)
+  productItems_cargoNumber                       String?   @map("productItems.cargoNumber")
+  baseInfo_completeTime                          DateTime? @map("baseInfo.completeTime") @db.Timestamptz(6)
+  baseInfo_closeReason                           String?   @map("baseInfo.closeReason")
+  baseInfo_sellerContact_email                   String?   @map("baseInfo.sellerContact.email")
+  baseInfo_remark                                String?   @map("baseInfo.remark")
+  baseInfo_buyerFeedback                         String?   @map("baseInfo.buyerFeedback")
+  approved_                                      Boolean?  @map("approved?")
+
+  @@map("1688_orders_en")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model refunded_orders_cn {
+  alipayPaymentId                       String?
+  applyCarriage                         BigInt?
+  applyPayment                          BigInt?
+  applyReason                           String?
+  applyReasonId                         BigInt?
+  applySubReasonId                      BigInt?
+  buyerMemberId                         String?
+  buyerUserId                           BigInt?
+  canRefundPayment                      BigInt?
+  disputeRequest                        BigInt?
+  disputeType                           BigInt?
+  frozenFund                            BigInt?
+  gmtApply                              DateTime? @db.Timestamptz(6)
+  gmtCompleted                          DateTime? @db.Timestamptz(6)
+  gmtCreate                             DateTime? @db.Timestamptz(6)
+  gmtModified                           DateTime? @db.Timestamptz(6)
+  gmtTimeOut                            DateTime? @db.Timestamptz(6)
+  goodsStatus                           BigInt?
+  id                                    BigInt?
+  orderId                               BigInt?
+  productName                           String?
+  refundCarriage                        BigInt?
+  refundId                              String?
+  refundPayment                         BigInt?
+  rejectReasonId                        BigInt?
+  rejectTimes                           BigInt?
+  sellerMemberId                        String?
+  sellerUserId                          BigInt?
+  status                                String?
+  tradeTypeStr                          String?
+  refundOperationList                   String?
+  rejectReason                          String?
+  extInfo_bizCode                       String?   @map("extInfo.bizCode")
+  extInfo_apply_reason_text             String?   @map("extInfo.apply_reason_text")
+  extInfo_itemBuyAmount                 String?   @map("extInfo.itemBuyAmount")
+  extInfo_outPaySystem                  String?   @map("extInfo.outPaySystem")
+  extInfo_interceptItemListResult       String?   @map("extInfo.interceptItemListResult")
+  extInfo_seller_batch                  String?   @map("extInfo.seller_batch")
+  extInfo_clj_zero_second_refund        String?   @map("extInfo.clj_zero_second_refund")
+  extInfo_cPartRefund                   String?   @map("extInfo.cPartRefund")
+  extInfo_submitGradeVipLevel           String?   @map("extInfo.submitGradeVipLevel")
+  extInfo_bs_sync                       String?   @map("extInfo.bs_sync")
+  extInfo_sgr                           String?   @map("extInfo.sgr")
+  extInfo_bgmtc                         String?   @map("extInfo.bgmtc")
+  extInfo_jibuBizCode                   String?   @map("extInfo.jibuBizCode")
+  extInfo_agreeSource                   String?   @map("extInfo.agreeSource")
+  extInfo_sellerDoRefundNick            String?   @map("extInfo.sellerDoRefundNick")
+  extInfo_ttid                          String?   @map("extInfo.ttid")
+  extInfo_sync                          String?   @map("extInfo.sync")
+  extInfo_b_obs                         String?   @map("extInfo.b_obs")
+  extInfo_rp3                           String?   @map("extInfo.rp3")
+  extInfo_b2b_exchange                  String?   @map("extInfo.b2b_exchange")
+  extInfo_disputeTradeStatus            String?   @map("extInfo.disputeTradeStatus")
+  extInfo_isVirtual                     String?   @map("extInfo.isVirtual")
+  extInfo_EXmrf                         String?   @map("extInfo.EXmrf")
+  extInfo_b_cf_rsc                      String?   @map("extInfo.b_cf_rsc")
+  extInfo_enfunddetail                  String?   @map("extInfo.enfunddetail")
+  extInfo_agrExctT                      String?   @map("extInfo.agrExctT")
+  extInfo_pay_lock                      String?   @map("extInfo.pay_lock")
+  extInfo_lastOrder                     String?   @map("extInfo.lastOrder")
+  extInfo_tod                           String?   @map("extInfo.tod")
+  extInfo_newRefund                     String?   @map("extInfo.newRefund")
+  extInfo_b_fsc                         String?   @map("extInfo.b_fsc")
+  extInfo_thbyf_b_l_rc                  String?   @map("extInfo.thbyf_b_l_rc")
+  extInfo_opRole                        String?   @map("extInfo.opRole")
+  extInfo_b2b_buyer_mId                 String?   @map("extInfo.b2b_buyer_mId")
+  extInfo_refundPostFee                 String?   @map("extInfo.refundPostFee")
+  extInfo_apply_init_refund_fee         String?   @map("extInfo.apply_init_refund_fee")
+  extInfo_userCredit                    String?   @map("extInfo.userCredit")
+  extInfo_sdkCode                       String?   @map("extInfo.sdkCode")
+  extInfo_interceptStatus               String?   @map("extInfo.interceptStatus")
+  extInfo_agrExctd                      String?   @map("extInfo.agrExctd")
+  extInfo_tos                           String?   @map("extInfo.tos")
+  extInfo_ol_tf                         String?   @map("extInfo.ol_tf")
+  extInfo_b_pf                          String?   @map("extInfo.b_pf")
+  extInfo_part_refund                   String?   @map("extInfo.part_refund")
+  extInfo_cbu_fst_rsn                   String?   @map("extInfo.cbu_fst_rsn")
+  extInfo_payMode                       String?   @map("extInfo.payMode")
+  extInfo_appName                       String?   @map("extInfo.appName")
+  extInfo_fps                           String?   @map("extInfo.fps")
+  extInfo_workflowName                  String?   @map("extInfo.workflowName")
+  extInfo_seller_audit                  String?   @map("extInfo.seller_audit")
+  extInfo_mainOrderPostFee              String?   @map("extInfo.mainOrderPostFee")
+  extInfo_itemPrice                     String?   @map("extInfo.itemPrice")
+  extInfo_toSellerFee                   String?   @map("extInfo.toSellerFee")
+  extInfo_b2b_seller_mId                String?   @map("extInfo.b2b_seller_mId")
+  extInfo_b2b_bt                        String?   @map("extInfo.b2b_bt")
+  extInfo_b_blid                        String?   @map("extInfo.b_blid")
+  extInfo_p_advance_goods_amount        String?   @map("extInfo.p_advance_goods_amount")
+  extInfo_prepaidTime                   String?   @map("extInfo.prepaidTime")
+  extInfo_p_advance_carriage_amount     String?   @map("extInfo.p_advance_carriage_amount")
+  extInfo_advancePostFeeWithSubsiby     String?   @map("extInfo.advancePostFeeWithSubsiby")
+  extInfo_prepaidType                   String?   @map("extInfo.prepaidType")
+  extInfo_b_ncf_rsc                     String?   @map("extInfo.b_ncf_rsc")
+  extInfo_p_consign_id                  String?   @map("extInfo.p_consign_id")
+  extInfo_agreeRefundApplyTime          String?   @map("extInfo.agreeRefundApplyTime")
+  extInfo_seller_agreed_refund_fee      String?   @map("extInfo.seller_agreed_refund_fee")
+  extInfo_advanceVersion                String?   @map("extInfo.advanceVersion")
+  extInfo_return_address_id             String?   @map("extInfo.return_address_id")
+  extInfo_return_and_refund_return_type String?   @map("extInfo.return_and_refund_return_type")
+  extInfo_advanceRefundPostFee          String?   @map("extInfo.advanceRefundPostFee")
+  extInfo_intentReturnGoodsType         String?   @map("extInfo.intentReturnGoodsType")
+  extInfo_prepaidFailure                String?   @map("extInfo.prepaidFailure")
+  extInfo_restartForXiaoer              String?   @map("extInfo.restartForXiaoer")
+  extInfo_p_advance_status              String?   @map("extInfo.p_advance_status")
+  extInfo_s2AdvPostSsF                  String?   @map("extInfo.s2AdvPostSsF")
+  extInfo_refundFlowType                String?   @map("extInfo.refundFlowType")
+  extInfo_split_to_advance_subsidy_fee  String?   @map("extInfo.split_to_advance_subsidy_fee")
+  extInfo_trade_timer_reset             String?   @map("extInfo.trade_timer_reset")
+  extInfo_pmtR                          String?   @map("extInfo.pmtR")
+  extInfo_b_apply_share                 String?   @map("extInfo.b_apply_share")
+  extInfo__F_tg                         String?   @map("extInfo._F_tg")
+  extInfo_refund_fee_cal_type           String?   @map("extInfo.refund_fee_cal_type")
+  extInfo_b_apply_supplier_carriage     String?   @map("extInfo.b_apply_supplier_carriage")
+  extInfo_b_nav                         String?   @map("extInfo.b_nav")
+  extInfo_b_apply_supplier_share        String?   @map("extInfo.b_apply_supplier_share")
+  extInfo_has_threshold_coupon          String?   @map("extInfo.has_threshold_coupon")
+  extInfo_percent_refund                String?   @map("extInfo.percent_refund")
+  extInfo_inproxy_order_mode            String?   @map("extInfo.inproxy_order_mode")
+  extInfo_subOrderPartRefund            String?   @map("extInfo.subOrderPartRefund")
+  extInfo_b_coupon_version              String?   @map("extInfo.b_coupon_version")
+  extInfo_threshold_instruction         String?   @map("extInfo.threshold_instruction")
+  extInfo_b_big_shop_settle             String?   @map("extInfo.b_big_shop_settle")
+  extInfo_big_shop_supplier_id          String?   @map("extInfo.big_shop_supplier_id")
+  extInfo_p_advance_recover_goods       String?   @map("extInfo.p_advance_recover_goods")
+  extInfo_p_advance_recover_carriage    String?   @map("extInfo.p_advance_recover_carriage")
+  extInfo_ljt_vlb_t                     String?   @map("extInfo.ljt_vlb_t")
+  extInfo_ljt_launch_uid                String?   @map("extInfo.ljt_launch_uid")
+  extInfo_ljt_launch_t                  String?   @map("extInfo.ljt_launch_t")
+  extInfo_ljt_timeout_st                String?   @map("extInfo.ljt_timeout_st")
+  extInfo_b_ljt_status                  String?   @map("extInfo.b_ljt_status")
+  extInfo_carriageRiskTrackingorder     String?   @map("extInfo.carriageRiskTrackingorder")
+  extInfo_dmt                           String?   @map("extInfo.dmt")
+  extInfo_modOriFee                     String?   @map("extInfo.modOriFee")
+  extInfo_apply_text_id                 String?   @map("extInfo.apply_text_id")
+  extInfo_modify                        String?   @map("extInfo.modify")
+  extInfo_rshc                          String?   @map("extInfo.rshc")
+  extInfo_refuse_reason_id              String?   @map("extInfo.refuse_reason_id")
+  extInfo_seller_refuse_count           String?   @map("extInfo.seller_refuse_count")
+  extInfo_buyerPutProof                 String?   @map("extInfo.buyerPutProof")
+  extInfo_sellerPutProof                String?   @map("extInfo.sellerPutProof")
+  extInfo_refuse_reason_txt             String?   @map("extInfo.refuse_reason_txt")
+  extInfo_refuse_reason_msg             String?   @map("extInfo.refuse_reason_msg")
+
+  @@map("1688_refunded_orders_cn")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model refunded_orders_en {
+  alipayPaymentId                       String?
+  applyCarriage                         BigInt?
+  applyPayment                          BigInt?
+  applyReason                           String?
+  applyReasonId                         BigInt?
+  applySubReasonId                      BigInt?
+  buyerMemberId                         String?
+  buyerUserId                           BigInt?
+  canRefundPayment                      BigInt?
+  disputeRequest                        BigInt?
+  disputeType                           BigInt?
+  frozenFund                            BigInt?
+  gmtApply                              DateTime? @db.Timestamptz(6)
+  gmtCompleted                          DateTime? @db.Timestamptz(6)
+  gmtCreate                             DateTime? @db.Timestamptz(6)
+  gmtModified                           DateTime? @db.Timestamptz(6)
+  gmtTimeOut                            DateTime? @db.Timestamptz(6)
+  goodsStatus                           BigInt?
+  id                                    BigInt?
+  orderId                               BigInt?
+  productName                           String?
+  refundCarriage                        BigInt?
+  refundId                              String?
+  refundPayment                         BigInt?
+  rejectReasonId                        BigInt?
+  rejectTimes                           BigInt?
+  sellerMemberId                        String?
+  sellerUserId                          BigInt?
+  status                                String?
+  tradeTypeStr                          String?
+  refundOperationList                   String?
+  rejectReason                          String?
+  extInfo_bizCode                       String?   @map("extInfo.bizCode")
+  extInfo_apply_reason_text             String?   @map("extInfo.apply_reason_text")
+  extInfo_itemBuyAmount                 String?   @map("extInfo.itemBuyAmount")
+  extInfo_outPaySystem                  String?   @map("extInfo.outPaySystem")
+  extInfo_interceptItemListResult       String?   @map("extInfo.interceptItemListResult")
+  extInfo_seller_batch                  String?   @map("extInfo.seller_batch")
+  extInfo_clj_zero_second_refund        String?   @map("extInfo.clj_zero_second_refund")
+  extInfo_cPartRefund                   String?   @map("extInfo.cPartRefund")
+  extInfo_submitGradeVipLevel           String?   @map("extInfo.submitGradeVipLevel")
+  extInfo_bs_sync                       String?   @map("extInfo.bs_sync")
+  extInfo_sgr                           String?   @map("extInfo.sgr")
+  extInfo_bgmtc                         String?   @map("extInfo.bgmtc")
+  extInfo_jibuBizCode                   String?   @map("extInfo.jibuBizCode")
+  extInfo_agreeSource                   String?   @map("extInfo.agreeSource")
+  extInfo_sellerDoRefundNick            String?   @map("extInfo.sellerDoRefundNick")
+  extInfo_ttid                          String?   @map("extInfo.ttid")
+  extInfo_sync                          String?   @map("extInfo.sync")
+  extInfo_b_obs                         String?   @map("extInfo.b_obs")
+  extInfo_rp3                           String?   @map("extInfo.rp3")
+  extInfo_b2b_exchange                  String?   @map("extInfo.b2b_exchange")
+  extInfo_disputeTradeStatus            String?   @map("extInfo.disputeTradeStatus")
+  extInfo_isVirtual                     String?   @map("extInfo.isVirtual")
+  extInfo_EXmrf                         String?   @map("extInfo.EXmrf")
+  extInfo_b_cf_rsc                      String?   @map("extInfo.b_cf_rsc")
+  extInfo_enfunddetail                  String?   @map("extInfo.enfunddetail")
+  extInfo_agrExctT                      String?   @map("extInfo.agrExctT")
+  extInfo_pay_lock                      String?   @map("extInfo.pay_lock")
+  extInfo_lastOrder                     String?   @map("extInfo.lastOrder")
+  extInfo_tod                           String?   @map("extInfo.tod")
+  extInfo_newRefund                     String?   @map("extInfo.newRefund")
+  extInfo_b_fsc                         String?   @map("extInfo.b_fsc")
+  extInfo_thbyf_b_l_rc                  String?   @map("extInfo.thbyf_b_l_rc")
+  extInfo_opRole                        String?   @map("extInfo.opRole")
+  extInfo_b2b_buyer_mId                 String?   @map("extInfo.b2b_buyer_mId")
+  extInfo_refundPostFee                 String?   @map("extInfo.refundPostFee")
+  extInfo_apply_init_refund_fee         String?   @map("extInfo.apply_init_refund_fee")
+  extInfo_userCredit                    String?   @map("extInfo.userCredit")
+  extInfo_sdkCode                       String?   @map("extInfo.sdkCode")
+  extInfo_interceptStatus               String?   @map("extInfo.interceptStatus")
+  extInfo_agrExctd                      String?   @map("extInfo.agrExctd")
+  extInfo_tos                           String?   @map("extInfo.tos")
+  extInfo_ol_tf                         String?   @map("extInfo.ol_tf")
+  extInfo_b_pf                          String?   @map("extInfo.b_pf")
+  extInfo_part_refund                   String?   @map("extInfo.part_refund")
+  extInfo_cbu_fst_rsn                   String?   @map("extInfo.cbu_fst_rsn")
+  extInfo_payMode                       String?   @map("extInfo.payMode")
+  extInfo_appName                       String?   @map("extInfo.appName")
+  extInfo_fps                           String?   @map("extInfo.fps")
+  extInfo_workflowName                  String?   @map("extInfo.workflowName")
+  extInfo_seller_audit                  String?   @map("extInfo.seller_audit")
+  extInfo_mainOrderPostFee              String?   @map("extInfo.mainOrderPostFee")
+  extInfo_itemPrice                     String?   @map("extInfo.itemPrice")
+  extInfo_toSellerFee                   String?   @map("extInfo.toSellerFee")
+  extInfo_b2b_seller_mId                String?   @map("extInfo.b2b_seller_mId")
+  extInfo_b2b_bt                        String?   @map("extInfo.b2b_bt")
+  extInfo_b_blid                        String?   @map("extInfo.b_blid")
+  extInfo_p_advance_goods_amount        String?   @map("extInfo.p_advance_goods_amount")
+  extInfo_prepaidTime                   String?   @map("extInfo.prepaidTime")
+  extInfo_p_advance_carriage_amount     String?   @map("extInfo.p_advance_carriage_amount")
+  extInfo_advancePostFeeWithSubsiby     String?   @map("extInfo.advancePostFeeWithSubsiby")
+  extInfo_prepaidType                   String?   @map("extInfo.prepaidType")
+  extInfo_b_ncf_rsc                     String?   @map("extInfo.b_ncf_rsc")
+  extInfo_p_consign_id                  String?   @map("extInfo.p_consign_id")
+  extInfo_agreeRefundApplyTime          String?   @map("extInfo.agreeRefundApplyTime")
+  extInfo_seller_agreed_refund_fee      String?   @map("extInfo.seller_agreed_refund_fee")
+  extInfo_advanceVersion                String?   @map("extInfo.advanceVersion")
+  extInfo_return_address_id             String?   @map("extInfo.return_address_id")
+  extInfo_return_and_refund_return_type String?   @map("extInfo.return_and_refund_return_type")
+  extInfo_advanceRefundPostFee          String?   @map("extInfo.advanceRefundPostFee")
+  extInfo_intentReturnGoodsType         String?   @map("extInfo.intentReturnGoodsType")
+  extInfo_prepaidFailure                String?   @map("extInfo.prepaidFailure")
+  extInfo_restartForXiaoer              String?   @map("extInfo.restartForXiaoer")
+  extInfo_p_advance_status              String?   @map("extInfo.p_advance_status")
+  extInfo_s2AdvPostSsF                  String?   @map("extInfo.s2AdvPostSsF")
+  extInfo_refundFlowType                String?   @map("extInfo.refundFlowType")
+  extInfo_split_to_advance_subsidy_fee  String?   @map("extInfo.split_to_advance_subsidy_fee")
+  extInfo_trade_timer_reset             String?   @map("extInfo.trade_timer_reset")
+  extInfo_pmtR                          String?   @map("extInfo.pmtR")
+  extInfo_b_apply_share                 String?   @map("extInfo.b_apply_share")
+  extInfo__F_tg                         String?   @map("extInfo._F_tg")
+  extInfo_refund_fee_cal_type           String?   @map("extInfo.refund_fee_cal_type")
+  extInfo_b_apply_supplier_carriage     String?   @map("extInfo.b_apply_supplier_carriage")
+  extInfo_b_nav                         String?   @map("extInfo.b_nav")
+  extInfo_b_apply_supplier_share        String?   @map("extInfo.b_apply_supplier_share")
+  extInfo_has_threshold_coupon          String?   @map("extInfo.has_threshold_coupon")
+  extInfo_percent_refund                String?   @map("extInfo.percent_refund")
+  extInfo_inproxy_order_mode            String?   @map("extInfo.inproxy_order_mode")
+  extInfo_subOrderPartRefund            String?   @map("extInfo.subOrderPartRefund")
+  extInfo_b_coupon_version              String?   @map("extInfo.b_coupon_version")
+  extInfo_threshold_instruction         String?   @map("extInfo.threshold_instruction")
+  extInfo_b_big_shop_settle             String?   @map("extInfo.b_big_shop_settle")
+  extInfo_big_shop_supplier_id          String?   @map("extInfo.big_shop_supplier_id")
+  extInfo_p_advance_recover_goods       String?   @map("extInfo.p_advance_recover_goods")
+  extInfo_p_advance_recover_carriage    String?   @map("extInfo.p_advance_recover_carriage")
+  extInfo_ljt_vlb_t                     String?   @map("extInfo.ljt_vlb_t")
+  extInfo_ljt_launch_uid                String?   @map("extInfo.ljt_launch_uid")
+  extInfo_ljt_launch_t                  String?   @map("extInfo.ljt_launch_t")
+  extInfo_ljt_timeout_st                String?   @map("extInfo.ljt_timeout_st")
+  extInfo_b_ljt_status                  String?   @map("extInfo.b_ljt_status")
+  extInfo_carriageRiskTrackingorder     String?   @map("extInfo.carriageRiskTrackingorder")
+  extInfo_dmt                           String?   @map("extInfo.dmt")
+  extInfo_modOriFee                     String?   @map("extInfo.modOriFee")
+  extInfo_apply_text_id                 String?   @map("extInfo.apply_text_id")
+  extInfo_modify                        String?   @map("extInfo.modify")
+  extInfo_rshc                          String?   @map("extInfo.rshc")
+  extInfo_refuse_reason_id              String?   @map("extInfo.refuse_reason_id")
+  extInfo_seller_refuse_count           String?   @map("extInfo.seller_refuse_count")
+  extInfo_buyerPutProof                 String?   @map("extInfo.buyerPutProof")
+  extInfo_sellerPutProof                String?   @map("extInfo.sellerPutProof")
+  extInfo_refuse_reason_txt             String?   @map("extInfo.refuse_reason_txt")
+  extInfo_refuse_reason_msg             String?   @map("extInfo.refuse_reason_msg")
+
+  @@map("1688_refunded_orders_en")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL {
+  amazon_order_id         String?   @map("amazon-order-id")
+  merchant_order_id       Float?    @map("merchant-order-id")
+  shipment_id             String?   @map("shipment-id")
+  shipment_item_id        String?   @map("shipment-item-id")
+  amazon_order_item_id    BigInt?   @map("amazon-order-item-id")
+  merchant_order_item_id  Float?    @map("merchant-order-item-id")
+  purchase_date           DateTime? @map("purchase-date") @db.Timestamptz(6)
+  payments_date           DateTime? @map("payments-date") @db.Timestamptz(6)
+  shipment_date           DateTime? @map("shipment-date") @db.Timestamptz(6)
+  reporting_date          DateTime? @map("reporting-date") @db.Timestamptz(6)
+  buyer_email             String?   @map("buyer-email")
+  buyer_name              Float?    @map("buyer-name")
+  buyer_phone_number      Float?    @map("buyer-phone-number")
+  sku                     String?
+  product_name            String?   @map("product-name")
+  quantity_shipped        BigInt?   @map("quantity-shipped")
+  currency                String?
+  item_price              Float?    @map("item-price")
+  item_tax                Float?    @map("item-tax")
+  shipping_price          Float?    @map("shipping-price")
+  shipping_tax            Float?    @map("shipping-tax")
+  gift_wrap_price         Float?    @map("gift-wrap-price")
+  gift_wrap_tax           Float?    @map("gift-wrap-tax")
+  ship_service_level      String?   @map("ship-service-level")
+  recipient_name          Float?    @map("recipient-name")
+  ship_address_1          Float?    @map("ship-address-1")
+  ship_address_2          Float?    @map("ship-address-2")
+  ship_address_3          Float?    @map("ship-address-3")
+  ship_city               String?   @map("ship-city")
+  ship_state              String?   @map("ship-state")
+  ship_postal_code        String?   @map("ship-postal-code")
+  ship_country            String?   @map("ship-country")
+  ship_phone_number       Float?    @map("ship-phone-number")
+  bill_address_1          Float?    @map("bill-address-1")
+  bill_address_2          Float?    @map("bill-address-2")
+  bill_address_3          Float?    @map("bill-address-3")
+  bill_city               Float?    @map("bill-city")
+  bill_state              Float?    @map("bill-state")
+  bill_postal_code        Float?    @map("bill-postal-code")
+  bill_country            Float?    @map("bill-country")
+  item_promotion_discount Float?    @map("item-promotion-discount")
+  ship_promotion_discount Float?    @map("ship-promotion-discount")
+  carrier                 String?
+  tracking_number         String?   @map("tracking-number")
+  estimated_arrival_date  String?   @map("estimated-arrival-date")
+  fulfillment_center_id   String?   @map("fulfillment-center-id")
+  fulfillment_channel     String?   @map("fulfillment-channel")
+  sales_channel           String?   @map("sales-channel")
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_GET_FBA_FULFILLMENT_CUSTOMER_SHIPMENT_SALES_DATA {
+  shipment_date         DateTime? @map("shipment-date") @db.Timestamptz(6)
+  sku                   String?
+  fnsku                 String?
+  asin                  String?
+  fulfillment_center_id String?   @map("fulfillment-center-id")
+  quantity              BigInt?
+  amazon_order_id       String?   @map("amazon-order-id")
+  currency              String?
+  item_price_per_unit   Float?    @map("item-price-per-unit")
+  shipping_price        Float?    @map("shipping-price")
+  gift_wrap_price       Float?    @map("gift-wrap-price")
+  ship_city             String?   @map("ship-city")
+  ship_state            String?   @map("ship-state")
+  ship_postal_code      String?   @map("ship-postal-code")
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL {
+  amazon_order_id         String?   @map("amazon-order-id")
+  merchant_order_id       String?   @map("merchant-order-id")
+  purchase_date           DateTime? @map("purchase-date") @db.Timestamp(6)
+  last_updated_date       DateTime? @map("last-updated-date") @db.Timestamp(6)
+  order_status            String?   @map("order-status")
+  fulfillment_channel     String?   @map("fulfillment-channel")
+  sales_channel           String?   @map("sales-channel")
+  order_channel           String?   @map("order-channel")
+  ship_service_level      String?   @map("ship-service-level")
+  product_name            String?   @map("product-name")
+  sku                     String?
+  asin                    String?
+  item_status             String?   @map("item-status")
+  quantity                String?
+  currency                String?
+  item_price              String?   @map("item-price")
+  item_tax                String?   @map("item-tax")
+  shipping_price          String?   @map("shipping-price")
+  shipping_tax            String?   @map("shipping-tax")
+  gift_wrap_price         String?   @map("gift-wrap-price")
+  gift_wrap_tax           String?   @map("gift-wrap-tax")
+  item_promotion_discount String?   @map("item-promotion-discount")
+  ship_promotion_discount String?   @map("ship-promotion-discount")
+  ship_city               String?   @map("ship-city")
+  ship_state              String?   @map("ship-state")
+  ship_postal_code        String?   @map("ship-postal-code")
+  ship_country            String?   @map("ship-country")
+  promotion_ids           String?   @map("promotion-ids")
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_GET_FLAT_FILE_OPEN_LISTINGS_DATA {
+  sku      String?
+  asin     String?
+  price    Float?
+  quantity Float?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_GET_MERCHANT_LISTINGS_ALL_DATA {
+  item_name                       String?   @map("item-name")
+  item_description                String?   @map("item-description")
+  listing_id                      String?   @map("listing-id")
+  seller_sku                      String?   @map("seller-sku")
+  price                           Float?
+  quantity                        Float?
+  open_date                       DateTime? @map("open-date") @db.Timestamp(6)
+  image_url                       Float?    @map("image-url")
+  item_is_marketplace             String?   @map("item-is-marketplace")
+  product_id_type                 BigInt?   @map("product-id-type")
+  zshop_shipping_fee              Float?    @map("zshop-shipping-fee")
+  item_note                       Float?    @map("item-note")
+  item_condition                  BigInt?   @map("item-condition")
+  zshop_category1                 Float?    @map("zshop-category1")
+  zshop_browse_path               Float?    @map("zshop-browse-path")
+  zshop_storefront_feature        Float?    @map("zshop-storefront-feature")
+  asin1                           String?
+  asin2                           Float?
+  asin3                           Float?
+  will_ship_internationally       Float?    @map("will-ship-internationally")
+  expedited_shipping              Float?    @map("expedited-shipping")
+  zshop_boldface                  Float?    @map("zshop-boldface")
+  product_id                      String    @map("product-id")
+  bid_for_featured_placement      Float?    @map("bid-for-featured-placement")
+  add_delete                      Float?    @map("add-delete")
+  pending_quantity                Float?    @map("pending-quantity")
+  fulfillment_channel             String?   @map("fulfillment-channel")
+  optional_payment_type_exclusion Float?    @map("optional-payment-type-exclusion")
+  status                          String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_brand_analytics_market_basket_report {
+  startDate         String?
+  endDate           String?
+  asin              String?
+  purchasedWithAsin String?
+  purchasedWithRank BigInt?
+  combinationPct    Float?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model AMZN_BRAND_ANALYTICS_MARKET_BASKET_REPORT {
+  startDate         DateTime? @db.Timestamp(6)
+  endDate           DateTime? @db.Timestamp(6)
+  asin              String?
+  purchasedWithAsin String?
+  purchasedWithRank BigInt?
+  combinationPct    Float?
+
+  @@ignore
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_mappings {
+  id                       BigInt    @id @default(autoincrement())
+  custom_sku               String    @unique @db.VarChar(100)
+  cn_order_id              BigInt?
+  cn_product_id            BigInt?
+  cn_sku_id                BigInt?
+  cn_product_name          String?
+  cn_product_image_url     String?
+  cn_price                 Float?
+  cn_quantity              BigInt?
+  cn_seller_id             String?   @db.VarChar(100)
+  cn_buyer_id              String?   @db.VarChar(100)
+  cn_status                String?   @db.VarChar(50)
+  cn_create_time           DateTime? @db.Timestamptz(6)
+  amzn_order_id            String?   @db.VarChar(100)
+  amzn_order_item_id       BigInt?
+  amzn_sku                 String?   @db.VarChar(100)
+  amzn_asin                String?   @db.VarChar(20)
+  amzn_product_name        String?
+  amzn_quantity            BigInt?
+  amzn_item_price          Float?
+  amzn_currency            String?   @db.VarChar(10)
+  amzn_order_status        String?   @db.VarChar(50)
+  amzn_purchase_date       DateTime? @db.Timestamptz(6)
+  amzn_fulfillment_channel String?   @db.VarChar(50)
+  mapping_confidence       Float?    @default(0.00)
+  mapping_method           String?   @db.VarChar(50)
+  mapped_by_user_id        BigInt?
+  mapping_notes            String?
+  is_verified              Boolean?  @default(false)
+  unified_product_name     String?   @db.VarChar(255)
+  unified_category         String?   @db.VarChar(100)
+  unified_image_url        String?
+  price_margin             Float?
+  profit_percentage        Float?
+  created_at               DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime? @default(now()) @db.Timestamptz(6)
+  verified_at              DateTime? @db.Timestamptz(6)
+
+  @@index([amzn_asin], map: "idx_order_mappings_amzn_asin")
+  @@index([amzn_order_id], map: "idx_order_mappings_amzn_order_id")
+  @@index([cn_order_id], map: "idx_order_mappings_cn_order_id")
+  @@index([cn_product_id], map: "idx_order_mappings_cn_product_id")
+  @@index([created_at], map: "idx_order_mappings_created_at")
+  @@index([custom_sku], map: "idx_order_mappings_custom_sku")
+  @@index([is_verified], map: "idx_order_mappings_is_verified")
+  @@index([mapping_confidence], map: "idx_order_mappings_mapping_confidence")
+}
+
+model AMZN_PRODUCT_LIST {
+  listing_id                String    @map("listing-id")
+  item_name                 String    @map("item-name")
+  item_description          String?   @map("item-description")
+  seller_sku                String    @map("seller-sku")
+  price                     Float
+  quantity                  Float?
+  open_date                 DateTime? @map("open-date") @db.Timestamp(6)
+  image_url                 Float?    @map("image-url")
+  item_is_marketplace       String?   @map("item-is-marketplace")
+  product_id                String    @id @map("product-id")
+  product_id_type           BigInt?   @map("product-id-type")
+  asin1                     String
+  asin2                     Float?
+  asin3                     Float?
+  item_condition            BigInt?   @map("item-condition")
+  zshop_category1           Float?    @map("zshop-category1")
+  zshop_browse_path         Float?    @map("zshop-browse-path")
+  zshop_storefront_feature  Float?    @map("zshop-storefront-feature")
+  will_ship_internationally Float?    @map("will-ship-internationally")
+  expedited_shipping        Float?    @map("expedited-shipping")
+  fulfillment_channel       String?   @map("fulfillment-channel")
+  status                    String
+}
+
+model orders_by_products {
+  // Primary key and unique identifier
+  id                                             BigInt    @id @default(autoincrement())
+  
+  // Order Rating Information
+  orderRateInfo_sellerRateStatus                 BigInt?   @map("orderRateInfo.sellerRateStatus")
+  orderRateInfo_buyerRateStatus                  BigInt?   @map("orderRateInfo.buyerRateStatus")
+  
+  // Trade Terms
+  tradeTerms_phase                               String?   @map("tradeTerms.phase")
+  tradeTerms_payWayDesc                          String?   @map("tradeTerms.payWayDesc")
+  tradeTerms_expressPay                          Boolean?  @map("tradeTerms.expressPay")
+  tradeTerms_payTime                             String?   @map("tradeTerms.payTime")
+  tradeTerms_payStatusDesc                       String?   @map("tradeTerms.payStatusDesc")
+  tradeTerms_payWay                              String?   @map("tradeTerms.payWay")
+  tradeTerms_cardPay                             Boolean?  @map("tradeTerms.cardPay")
+  tradeTerms_payStatus                           String?   @map("tradeTerms.payStatus")
+  tradeTerms_phasAmount                          Float?    @map("tradeTerms.phasAmount")
+  
+  // Native Logistics
+  nativeLogistics_zip                            String?   @map("nativeLogistics.zip")
+  nativeLogistics_area                           String?   @map("nativeLogistics.area")
+  nativeLogistics_address                        String?   @map("nativeLogistics.address")
+  nativeLogistics_town                           String?   @map("nativeLogistics.town")
+  nativeLogistics_city                           String?   @map("nativeLogistics.city")
+  nativeLogistics_townCode                       String?   @map("nativeLogistics.townCode")
+  nativeLogistics_contactPerson                  String?   @map("nativeLogistics.contactPerson")
+  nativeLogistics_areaCode                       String?   @map("nativeLogistics.areaCode")
+  nativeLogistics_province                       String?   @map("nativeLogistics.province")
+  nativeLogistics_privacyProtection              Boolean?  @map("nativeLogistics.privacyProtection")
+  
+  // Base Order Information
+  baseInfo_businessType                          String?   @map("baseInfo.businessType")
+  baseInfo_buyerID                               String?   @map("baseInfo.buyerID")
+  baseInfo_createTime                            DateTime? @map("baseInfo.createTime") @db.Timestamp(6)
+  baseInfo_id                                    Decimal   @map("baseInfo.id") @db.Decimal
+  baseInfo_modifyTime                            DateTime? @map("baseInfo.modifyTime") @db.Timestamp(6)
+  baseInfo_payTime                               DateTime? @map("baseInfo.payTime") @db.Timestamp(6)
+  baseInfo_refund                                Decimal?  @map("baseInfo.refund") @db.Decimal
+  baseInfo_sellerID                              String?   @map("baseInfo.sellerID")
+  baseInfo_shippingFee                           Float?    @map("baseInfo.shippingFee")
+  baseInfo_status                                String?   @map("baseInfo.status")
+  baseInfo_totalAmount                           Float?    @map("baseInfo.totalAmount")
+  baseInfo_discount                              Decimal?  @map("baseInfo.discount") @db.Decimal
+  
+  // Buyer Contact Information
+  baseInfo_buyerContact_phone                    String?   @map("baseInfo.buyerContact.phone")
+  baseInfo_buyerContact_email                    String?   @map("baseInfo.buyerContact.email")
+  baseInfo_buyerContact_imInPlatform             String?   @map("baseInfo.buyerContact.imInPlatform")
+  baseInfo_buyerContact_name                     String?   @map("baseInfo.buyerContact.name")
+  baseInfo_buyerContact_companyName              String?   @map("baseInfo.buyerContact.companyName")
+  
+  // Seller Contact Information
+  baseInfo_sellerContact_phone                   String?   @map("baseInfo.sellerContact.phone")
+  baseInfo_sellerContact_imInPlatform            String?   @map("baseInfo.sellerContact.imInPlatform")
+  baseInfo_sellerContact_name                    String?   @map("baseInfo.sellerContact.name")
+  baseInfo_sellerContact_mobile                  String?   @map("baseInfo.sellerContact.mobile")
+  baseInfo_sellerContact_companyName             String?   @map("baseInfo.sellerContact.companyName")
+  baseInfo_sellerContact_email                   String?   @map("baseInfo.sellerContact.email")
+  
+  // Additional Base Info
+  baseInfo_tradeType                             String?   @map("baseInfo.tradeType")
+  baseInfo_refundPayment                         BigInt?   @map("baseInfo.refundPayment")
+  baseInfo_idOfStr                               String?   @map("baseInfo.idOfStr")
+  baseInfo_alipayTradeId                         String?   @map("baseInfo.alipayTradeId")
+  
+  // Receiver Information
+  baseInfo_receiverInfo_toDivisionCode           String?   @map("baseInfo.receiverInfo.toDivisionCode")
+  baseInfo_receiverInfo_toTownCode               String?   @map("baseInfo.receiverInfo.toTownCode")
+  baseInfo_receiverInfo_toFullName               String?   @map("baseInfo.receiverInfo.toFullName")
+  baseInfo_receiverInfo_toArea                   String?   @map("baseInfo.receiverInfo.toArea")
+  baseInfo_receiverInfo_toPost                   String?   @map("baseInfo.receiverInfo.toPost")
+  
+  // User IDs and Login Info
+  baseInfo_buyerLoginId                          String?   @map("baseInfo.buyerLoginId")
+  baseInfo_sellerLoginId                         String?   @map("baseInfo.sellerLoginId")
+  baseInfo_buyerUserId                           Decimal?  @map("baseInfo.buyerUserId") @db.Decimal
+  baseInfo_sellerUserId                          Decimal?  @map("baseInfo.sellerUserId") @db.Decimal
+  baseInfo_buyerAlipayId                         String?   @map("baseInfo.buyerAlipayId")
+  baseInfo_sellerAlipayId                        String?   @map("baseInfo.sellerAlipayId")
+  
+  // Payment and Order Flags
+  baseInfo_sumProductPayment                     Float?    @map("baseInfo.sumProductPayment")
+  baseInfo_stepPayAll                            Boolean?  @map("baseInfo.stepPayAll")
+  baseInfo_overSeaOrder                          Boolean?  @map("baseInfo.overSeaOrder")
+  baseInfo_allDeliveredTime                      DateTime? @map("baseInfo.allDeliveredTime") @db.Timestamp(6)
+  baseInfo_completeTime                          DateTime? @map("baseInfo.completeTime") @db.Timestamp(6)
+  baseInfo_closeReason                           String?   @map("baseInfo.closeReason")
+  baseInfo_remark                                String?   @map("baseInfo.remark")
+  baseInfo_buyerFeedback                         String?   @map("baseInfo.buyerFeedback")
+  
+  // Order Business Information
+  orderBizInfo_odsCyd                            Boolean?  @map("orderBizInfo.odsCyd")
+  orderBizInfo_creditOrder                       Boolean?  @map("orderBizInfo.creditOrder")
+  orderBizInfo_creditOrderDetail_payAmount       Float?    @map("orderBizInfo.creditOrderDetail.payAmount")
+  orderBizInfo_creditOrderDetail_createTime      String?   @map("orderBizInfo.creditOrderDetail.createTime")
+  orderBizInfo_creditOrderDetail_status          String?   @map("orderBizInfo.creditOrderDetail.status")
+  orderBizInfo_creditOrderDetail_statusStr       String?   @map("orderBizInfo.creditOrderDetail.statusStr")
+  orderBizInfo_creditOrderDetail_restRepayAmount Float?    @map("orderBizInfo.creditOrderDetail.restRepayAmount")
+  orderBizInfo_dropshipping                      Boolean?  @map("orderBizInfo.dropshipping")
+  orderBizInfo_shippingInsurance                 String?   @map("orderBizInfo.shippingInsurance")
+  orderBizInfo_fz                                Boolean?  @map("orderBizInfo.fz")
+  orderBizInfo_tgOfficialPickUp                  Boolean?  @map("orderBizInfo.tgOfficialPickUp")
+  
+  // Product Items - This is the key difference from order_list_en
+  // Each record represents one product within an order
+  productItems_itemAmount                        Float?    @map("productItems.itemAmount")
+  productItems_name                              String?   @map("productItems.name")
+  productItems_price                             Float?    @map("productItems.price")
+  productItems_productID                         BigInt?   @map("productItems.productID")
+  productItems_productImgUrl                     String?   @map("productItems.productImgUrl")
+  productItems_productSnapshotUrl                String?   @map("productItems.productSnapshotUrl")
+  productItems_quantity                          BigInt?   @map("productItems.quantity")
+  productItems_refund                            BigInt?   @map("productItems.refund")
+  productItems_skuID                             BigInt?   @map("productItems.skuID")
+  productItems_status                            String?   @map("productItems.status")
+  productItems_subItemID                         BigInt?   @map("productItems.subItemID")
+  productItems_type                              String?   @map("productItems.type")
+  productItems_unit                              String?   @map("productItems.unit")
+  productItems_guaranteesTerms                   String?   @map("productItems.guaranteesTerms")
+  productItems_productCargoNumber                String?   @map("productItems.productCargoNumber")
+  productItems_skuInfos                          String?   @map("productItems.skuInfos")
+  productItems_entryDiscount                     BigInt?   @map("productItems.entryDiscount")
+  productItems_specId                            String?   @map("productItems.specId")
+  productItems_quantityFactor                    BigInt?   @map("productItems.quantityFactor")
+  productItems_statusStr                         String?   @map("productItems.statusStr")
+  productItems_sharePostage                      Float?    @map("productItems.sharePostage")
+  productItems_cargoNumber                       String?   @map("productItems.cargoNumber")
+  
+  // Approval Status
+  approved_                                      Boolean?  @map("approved?")
+  
+  // Additional field to connect to products table (this is what was missing)
+  products_id                                    Int?
+  
+  // Relationships
+  product_list_en                                product_list_en? @relation(fields: [productItems_productID], references: [productID])
+  products                                       products?        @relation(fields: [products_id], references: [id])
+  
+  // Additional tracking fields for the junction table
+  created_at                                     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                                     DateTime? @default(now()) @updatedAt @db.Timestamptz(6)
+  
+  // Indexes for better query performance
+  @@index([baseInfo_id], map: "idx_orders_by_products_order_id")
+  @@index([productItems_productID], map: "idx_orders_by_products_product_id") 
+  @@index([products_id], map: "idx_orders_by_products_products_table_id")
+  @@index([baseInfo_sellerID], map: "idx_orders_by_products_seller_id")
+  @@index([baseInfo_buyerID], map: "idx_orders_by_products_buyer_id")
+  @@index([baseInfo_createTime], map: "idx_orders_by_products_create_time")
+  @@index([productItems_status], map: "idx_orders_by_products_product_status")
+  @@index([baseInfo_status], map: "idx_orders_by_products_order_status")
+  @@index([approved_], map: "idx_orders_by_products_is_approved")
+  @@index([productItems_name], map: "idx_orders_by_products_product_name")
+  @@index([baseInfo_payTime], map: "idx_orders_by_products_pay_time")
+  
+  @@map("1688_orders_by_products")
+}
+
+// Update the product_list_en model to include the relationship
+model product_list_en {
+  productID          BigInt @id
+  name               String
+  price              Float
+  productImgUrl      String
+  productSnapshotUrl String
+  unit               String
+  
+  // Relationship with orders_by_products
+  orders_by_products orders_by_products[]
+
+  @@map("1688_product_list_en")
+}
+
+// Update the products model to include the relationship
+model products {
+  id                   Int       @id @default(autoincrement())
+  sku                  String    @db.VarChar(100)
+  asin                 String?   @db.VarChar(50)
+  mainCategory         String?   @db.VarChar(100)
+  subCategory          String?   @db.VarChar(100)
+  productTitle         String    @db.VarChar(255)
+  costPrice            Int?
+  salePrice            Int?
+  dealPrice            Int?
+  color                String?   @db.VarChar(50)
+  productLength        Int?
+  productWidth         Int?
+  productHeight        Int?
+  productDimensionUnit String?   @db.VarChar(10)
+  packageLength        Int?
+  packageWidth         Int?
+  packageHeight        Int?
+  packageDimensionUnit String?   @db.VarChar(10)
+  packageWeight        Int?
+  weightUnit           String?   @db.VarChar(20)
+  productImage         String?
+  productLaunchDate    DateTime? @db.Date
+  supplierUrl          String?
+  salePerson           String?   @db.VarChar(100)
+  createdAt            DateTime? @default(now()) @db.Timestamp(6)
+  
+  // Relationship with orders_by_products
+  orders_by_products   orders_by_products[]
+}
+
+
+enum role_enum {
+  USER
+  ADMIN
+}
