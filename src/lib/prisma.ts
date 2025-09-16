@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { preloadStyle } from "next/dist/server/app-render/entry-base";
+// import { preloadStyle } from "next/dist/server/app-render/entry-base";
 
 declare global {
   var prisma: PrismaClient | undefined;

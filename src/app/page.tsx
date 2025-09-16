@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -15,19 +15,40 @@ import {
   AlertCircle,
   User,
   LogOut,
-  Settings
+  Settings,
+  Code,
+  Layout,
+  Layers
 } from "lucide-react";
 
 type Report = {
   id: number;
   name: string;
   url: string;
+  type: 'report';
 };
+
+type CustomPage = {
+  id: number;
+  name: string;
+  component: string; // Component name to import
+  type: 'page';
+  description?: string;
+  icon?: string;
+};
+
+type ContentItem = Report | CustomPage;
 
 type User = {
   id: number;
   email: string;
   role: string;
+};
+
+// Custom page components registry
+const customPageComponents: Record<string, any> = {
+  'AmazonSelerRaningsDashboard': lazy(() => import('@/components/seller_rankings')),
+  'CompetitorMappingDashboard': lazy(() => import('@/components/seller_comparisions')),
 };
 
 function camelize(str: string) {
@@ -36,13 +57,48 @@ function camelize(str: string) {
   }).replace(/\s+/g, '');
 }
 
+// Custom page loading component
+function CustomPageRenderer({ page }: { page: CustomPage }) {
+  const Component = customPageComponents[page.component];
+  
+  if (!Component) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Component not found</h3>
+          <p className="text-gray-600">
+            The component "{page.component}" could not be loaded.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading page...</p>
+        </div>
+      </div>
+    }>
+      <Component />
+    </Suspense>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [customPages, setCustomPages] = useState<CustomPage[]>([]);
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -70,18 +126,43 @@ export default function DashboardPage() {
       try {
         const res = await fetch("/api/reports");
         const data = await res.json();
-        setReports(data.reports || []);
-        if (data.reports.length > 0) {
-          setSelectedReport(data.reports[0]);
-        }
+        const reportsData = (data.reports || []).map((r: any) => ({ ...r, type: 'report' as const }));
+        setReports(reportsData);
       } catch {
         setError(true);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchReports();
+    // Load custom pages
+    const fetchCustomPages = async () => {
+        // If API doesn't exist yet, use default pages
+        const defaultPages: CustomPage[] = [
+          {
+            id: 1,
+            name: "Seller Rankings",
+            component: "AmazonSelerRaningsDashboard",
+            type: 'page',
+            description: "Check Seller Rankings",
+            icon: "BarChart3"
+          },
+          {
+            id: 2,
+            name: "Competitive Pricing",
+            component: "CompetitorMappingDashboard",
+            type: 'page',
+            description: "Compare prices with competitors",
+            icon: "BarChart3"
+          },
+        ];
+        setCustomPages(defaultPages);
+    };
+
+    const loadContent = async () => {
+      await Promise.all([fetchReports(), fetchCustomPages()]);
+      setIsLoading(false);
+    };
+
+    loadContent();
   }, [router]);
 
   const handleIframeLoad = () => {
@@ -96,16 +177,25 @@ export default function DashboardPage() {
 
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
-  const refreshReport = () => {
-    setIsLoading(true);
-    setError(false);
-    const iframe = document.getElementById("reportContainer") as HTMLIFrameElement;
-    if (iframe) iframe.src = iframe.src;
+  const refreshContent = () => {
+    if (selectedContent?.type === 'report') {
+      setIsLoading(true);
+      setError(false);
+      const iframe = document.getElementById("reportContainer") as HTMLIFrameElement;
+      if (iframe) iframe.src = iframe.src;
+    } else {
+      // For custom pages, we can trigger a re-render or refresh data
+      window.location.reload();
+    }
   };
 
-  const filteredReports = reports.filter(report =>
-    report.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const allContent = [...reports, ...customPages];
+  const filteredContent = allContent.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredReports = filteredContent.filter(item => item.type === 'report') as Report[];
+  const filteredPages = filteredContent.filter(item => item.type === 'page') as CustomPage[];
 
   const handleLogout = async () => {
     try {
@@ -116,12 +206,71 @@ export default function DashboardPage() {
     }
   };
 
+  const getIconComponent = (iconName?: string) => {
+    const icons: Record<string, any> = {
+      BarChart3,
+      User,
+      Layout,
+      Code,
+      Layers,
+      Settings
+    };
+    return icons[iconName || 'Layout'];
+  };
+
+  const renderContentItem = (item: ContentItem) => {
+    const isSelected = selectedContent?.id === item.id && selectedContent?.type === item.type;
+    const IconComponent = item.type === 'page' ? getIconComponent((item as CustomPage).icon) : FileText;
+    
+    return (
+      <button
+        key={`${item.type}-${item.id}`}
+        onClick={() => {
+          setSelectedContent(item);
+          setSidebarOpen(false);
+          if (item.type === 'page') {
+            setIsLoading(false);
+            setError(false);
+          }
+        }}
+        className={`
+          w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all group
+          ${isSelected
+            ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
+            : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
+          }
+        `}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <IconComponent className={`w-4 h-4 ${
+              isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
+            }`} />
+            <div className="text-left">
+              <div className="truncate">{item.name}</div>
+              {item.type === 'page' && (item as CustomPage).description && (
+                <div className={`text-xs truncate ${
+                  isSelected ? 'text-blue-100' : 'text-gray-500'
+                }`}>
+                  {(item as CustomPage).description}
+                </div>
+              )}
+            </div>
+          </div>
+          <ChevronRight className={`w-4 h-4 transition-transform ${
+            isSelected ? 'text-white rotate-90' : 'text-gray-300 group-hover:text-gray-500'
+          }`} />
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className={`min-h-screen flex bg-gray-50 transition-all ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -136,13 +285,8 @@ export default function DashboardPage() {
       `}>
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
-
-
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              {/* <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div> */}
               <Image
                 src="/logo.png"
                 alt="Logo"
@@ -167,7 +311,7 @@ export default function DashboardPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search reports..."
+              placeholder="Search reports & pages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm"
@@ -175,47 +319,45 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Reports List */}
+        {/* Content List */}
         <div className="flex-1 p-4 overflow-y-auto">
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Reports ({filteredReports.length})
-            </h3>
-          </div>
+          {/* Custom Pages Section */}
+          {filteredPages.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                <Code className="w-4 h-4 mr-2" />
+                Custom Pages ({filteredPages.length})
+              </h3>
+              <div className="space-y-2">
+                {filteredPages.map(renderContentItem)}
+              </div>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            {filteredReports.map((report) => (
-              <button
-                key={report.id}
-                onClick={() => {
-                  setSelectedReport(report);
-                  setSidebarOpen(false);
-                }}
-                className={`
-                  w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all group
-                  ${selectedReport?.id === report.id
-                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
-                    : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
-                  }
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className={`w-4 h-4 ${selectedReport?.id === report.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
-                      }`} />
-                    <span className="truncate">{report.name}</span>
-                  </div>
-                  <ChevronRight className={`w-4 h-4 transition-transform ${selectedReport?.id === report.id ? 'text-white rotate-90' : 'text-gray-300 group-hover:text-gray-500'
-                    }`} />
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Reports Section */}
+          {filteredReports.length > 0 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                <FileText className="w-4 h-4 mr-2" />
+                Reports ({filteredReports.length})
+              </h3>
+              <div className="space-y-2">
+                {filteredReports.map(renderContentItem)}
+              </div>
+            </div>
+          )}
 
-          {filteredReports.length === 0 && searchTerm && (
+          {filteredContent.length === 0 && searchTerm && (
             <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm">No reports found for &quot;{searchTerm}&quot;</p>
+              <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm">No content found for &quot;{searchTerm}&quot;</p>
+            </div>
+          )}
+
+          {allContent.length === 0 && !searchTerm && (
+            <div className="text-center py-8 text-gray-500">
+              <Layers className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm">No content available</p>
             </div>
           )}
         </div>
@@ -271,26 +413,30 @@ export default function DashboardPage() {
 
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {selectedReport ? selectedReport.name : "Select a Report"}
+                  {selectedContent ? selectedContent.name : "Select Content"}
                 </h1>
-                {selectedReport && (
+                {selectedContent && (
                   <p className="text-sm text-gray-500 mt-1">
-                    Interactive report • Last updated just now
+                    {selectedContent.type === 'page' ? (
+                      <>Interactive page • {(selectedContent as CustomPage).description}</>
+                    ) : (
+                      <>Interactive report • Last updated just now</>
+                    )}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              {selectedReport && (
+              {selectedContent && (
                 <>
                   <button
-                    onClick={refreshReport}
+                    onClick={refreshContent}
                     disabled={isLoading}
                     className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {selectedContent.type === 'page' ? 'Reload' : 'Refresh'}
                   </button>
 
                   <button
@@ -315,53 +461,62 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Report Viewer */}
+        {/* Content Viewer */}
         <div className="flex-1 relative bg-white">
-          {selectedReport ? (
+          {selectedContent ? (
             <>
-              {/* Loading State */}
-              {isLoading && (
-                <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
-                  <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading report...</p>
-                    <p className="text-sm text-gray-500 mt-1">This may take a few moments</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Error State */}
-              {error && (
-                <div className="absolute inset-0 bg-white flex items-center justify-center">
-                  <div className="text-center max-w-md mx-auto p-6">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <AlertCircle className="w-8 h-8 text-red-500" />
+              {selectedContent.type === 'report' ? (
+                <>
+                  {/* Loading State for Reports */}
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
+                      <div className="text-center">
+                        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-600 font-medium">Loading report...</p>
+                        <p className="text-sm text-gray-500 mt-1">This may take a few moments</p>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load report</h3>
-                    <p className="text-gray-600 mb-6">
-                      There was an error loading the report. Please try refreshing or contact support if the problem persists.
-                    </p>
-                    <button
-                      onClick={refreshReport}
-                      className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Try Again
-                    </button>
-                  </div>
+                  )}
+
+                  {/* Error State for Reports */}
+                  {error && (
+                    <div className="absolute inset-0 bg-white flex items-center justify-center">
+                      <div className="text-center max-w-md mx-auto p-6">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load report</h3>
+                        <p className="text-gray-600 mb-6">
+                          There was an error loading the report. Please try refreshing or contact support if the problem persists.
+                        </p>
+                        <button
+                          onClick={refreshContent}
+                          className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Report Iframe */}
+                  <iframe
+                    id="reportContainer"
+                    src={(selectedContent as Report).url}
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                    onLoad={handleIframeLoad}
+                    onError={handleIframeError}
+                    title={selectedContent.name}
+                  />
+                </>
+              ) : (
+                /* Custom Page Content */
+                <div className="w-full h-full">
+                  <CustomPageRenderer page={selectedContent as CustomPage} />
                 </div>
               )}
-
-              {/* Report Content */}
-              <iframe
-                id="reportContainer"
-                src={selectedReport.url}
-                className="w-full h-full border-0"
-                allowFullScreen
-                onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                title={selectedReport.name}
-              />
             </>
           ) : (
             /* Empty State */
@@ -372,13 +527,13 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Welcome to Analytics Dashboard</h3>
                 <p className="text-gray-600 mb-6">
-                  Select a report from the sidebar to get started with your data visualization and insights.
+                  Select a report or custom page from the sidebar to get started with your data visualization and insights.
                 </p>
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg lg:hidden"
                 >
-                  Browse Reports
+                  Browse Content
                 </button>
               </div>
             </div>

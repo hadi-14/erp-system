@@ -155,22 +155,7 @@ export default function ProductManagement() {
 
   // Export Excel template
   const exportTemplate = () => {
-    const headers = [
-      "SKU", "ASIN", "Main Category", "Sub Category", "Product Title", "Cost Price (AED)", "Sale Price", "Deal Price", "Color",
-      "Product Length", "Product Width", "Product Height", "Product Dimension Unit", "Package Length", "Package Width", "Package Height",
-      "Package Dimension Unit", "Package Weight", "Weight Unit", "Product Image", "Product Launch Date", "Supplier Url", "Sale Person"
-    ]
-    const worksheet = XLSX.utils.aoa_to_sheet([headers])
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Products")
-    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
-    const blob = new Blob([excelBuffer], { type: "application/octet-stream" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'product_import_template.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
+    window.open('/products-template.xlsx', '_blank');
   }
 
   // Handle Excel file upload and parse
@@ -182,33 +167,37 @@ export default function ProductManagement() {
       const workbook = XLSX.read(data)
       const sheetName = workbook.SheetNames[0]
       const worksheet = workbook.Sheets[sheetName]
-      const rows: NewProduct[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+      const rows: never[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
       // Remove header row
       rows.shift()
+      rows.shift()
+
+      console.log(rows)
+
       const newProducts: NewProduct[] = rows.map(fields => ({
-        sku: fields.sku || '',
-        asin: fields.asin || '',
-        mainCategory: fields.mainCategory || '',
-        subCategory: fields.subCategory || '',
-        productTitle: fields.productTitle || '',
-        costPrice: fields.costPrice || 0,
-        salePrice: fields.salePrice || 0,
-        dealPrice: fields.dealPrice || 0,
-        color: fields.color || '',
-        productLength: fields.productLength || 0,
-        productWidth: fields.productWidth || 0,
-        productHeight: fields.productHeight || 0,
-        productDimensionUnit: (fields.productDimensionUnit as 'cm' | 'inch') || 'cm',
-        packageLength: fields.packageLength || 0,
-        packageWidth: fields.packageWidth || 0,
-        packageHeight: fields.packageHeight || 0,
-        packageDimensionUnit: (fields.packageDimensionUnit as 'cm' | 'inch') || 'cm',
-        packageWeight: fields.packageWeight || 0,
-        weightUnit: fields.weightUnit || 'Gram',
-        productImage: fields.productImage || '',
-        productLaunchDate: fields.productLaunchDate ? new Date(fields.productLaunchDate) : new Date(),
-        supplierUrl: fields.supplierUrl || '',
-        salePerson: fields.salePerson || ''
+        sku: fields[0],
+        asin: fields[1] || '',
+        mainCategory: fields[2] || '',
+        subCategory: fields[3] || '',
+        productTitle: fields[4] || '',
+        costPrice: parseFloat(fields[5]) || 0,
+        salePrice: parseFloat(fields[6]) || 0,
+        dealPrice: parseFloat(fields[7]) || 0,
+        color: fields[8] || '',
+        productLength: parseFloat(fields[9]) || 0,
+        productWidth: parseFloat(fields[10]) || 0,
+        productHeight: parseFloat(fields[11]) || 0,
+        productDimensionUnit: (fields[12] as 'cm' | 'inch') || 'cm',
+        packageLength: parseFloat(fields[13]) || 0,
+        packageWidth: parseFloat(fields[14]) || 0,
+        packageHeight: parseFloat(fields[15]) || 0,
+        packageDimensionUnit: (fields[16] as 'cm' | 'inch') || 'cm',
+        packageWeight: parseFloat(fields[17]) || 0,
+        weightUnit: fields[18] || 'Gram',
+        productImage: fields[19] || '',
+        productLaunchDate: fields[20] ? new Date(fields[20]) : new Date(),
+        supplierUrl: fields[21] || '',
+        salePerson: fields[22] || ''
       }))
       const result = await bulkImportProducts(newProducts)
       if (result.success) {
@@ -707,16 +696,16 @@ export default function ProductManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-950 opacity-0 mb-3">
+                  <label className="block text-sm font-medium text-slate-950 mb-3">
                     Upload Excel file (.xlsx):
                   </label>
                   <input
                     type="file"
                     accept=".xlsx"
                     onChange={e => setExcelFile(e.target.files?.[0] || null)}
-                    className="mb-4"
+                    className="mb-4 text-slate-700 opacity-100 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 w-full"
                   />
-                  </div>
+                </div>
 
                 <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                   <div className="text-sm text-slate-600">

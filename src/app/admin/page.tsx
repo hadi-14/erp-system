@@ -23,6 +23,7 @@ import ReportsPage from "@/components/reports";
 import AdvancedProductMappingPage from "@/components/product_mapping";
 import ProductManagement from "@/components/products";
 import OrdersPage from "@/components/orders";
+import AdminCompetitorAnalysisPage from "@/components/seller_comparision_management";
 
 type Page = {
     id: number;
@@ -117,6 +118,13 @@ export default function AdminPagesPage() {
                         component: OrdersPage,
                         category: "Management",
                         description: "Manage 1688 orders"
+                    },
+                    {
+                        id: 6,
+                        name: "Seller Comparisons",
+                        component: AdminCompetitorAnalysisPage,
+                        category: "Management",
+                        description: "Manage seller comparisons"
                     },
                 ];
 

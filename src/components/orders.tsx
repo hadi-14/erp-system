@@ -4,7 +4,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import Image from 'next/image';
 import { updateOrderApproval, bulkUpdateOrderApproval, getOrdersWithProducts, getOrderStats, getProductDetails } from '@/actions/admin/orders';
-import { TrendingUp, Users, Package, DollarSign, Eye, X, ChevronDown, ChevronUp, Check, Square, CheckSquare, Image as ImageIcon } from 'lucide-react';
+import { TrendingUp, Users, Package, DollarSign, Eye, X, ChevronDown, ChevronUp, Square, CheckSquare, Image as ImageIcon } from 'lucide-react';
 
 // Updated types to match the serialized data structure from orders.ts
 interface Product {
@@ -68,12 +68,12 @@ interface ProductDetails {
   } | null;
   relatedOrders: Array<{
     baseInfo_id: string;
-    baseInfo_createTime: Date;
-    baseInfo_status: string;
-    baseInfo_buyerContact_name: string;
-    productItems_quantity: string;
-    productItems_price: number;
-    approved_: boolean;
+    baseInfo_createTime: Date | null;
+    baseInfo_status: string | null;
+    baseInfo_buyerContact_name: string | null;
+    productItems_quantity: string | null;
+    productItems_price: number | null;
+    approved_: boolean | null;
   }>;
   likesCount: number;
 }
@@ -88,7 +88,7 @@ export default function OrdersPage() {
   const [isPending, startTransition] = useTransition();
   const [productDetails, setProductDetails] = useState<ProductDetails | null>(null);
   const [showProductModal, setShowProductModal] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  // const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [showStatsDetails, setShowStatsDetails] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
@@ -116,7 +116,7 @@ export default function OrdersPage() {
 
   // Handle product modal
   const handleProductModal = async (productId: string) => {
-    setSelectedProductId(productId);
+    // setSelectedProductId(productId);
     try {
       const details = await getProductDetails(productId);
       setProductDetails(details);
@@ -788,7 +788,7 @@ export default function OrdersPage() {
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
                         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNumber
-                            ? 'z-10 bg-blue-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                            ? 'z-10 bg-blue-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600'
                             : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                           }`}
                       >
