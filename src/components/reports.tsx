@@ -362,7 +362,7 @@ export default function ReportsPage() {
                             <input
                                 type="text"
                                 placeholder="Search reports..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-950"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -418,7 +418,7 @@ export default function ReportsPage() {
                                             id="name"
                                             type="text"
                                             placeholder="e.g., Monthly Sales Analysis"
-                                            className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                                            className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-950 ${
                                                 formErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
                                             }`}
                                             value={name}
@@ -441,7 +441,7 @@ export default function ReportsPage() {
                                             id="url"
                                             type="url"
                                             placeholder="e.g., https://example.com/report.pdf"
-                                            className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${
+                                            className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-950 ${
                                                 formErrors.url ? 'border-red-300 bg-red-50' : 'border-gray-200'
                                             }`}
                                             value={url}
@@ -545,7 +545,7 @@ export default function ReportsPage() {
                                                     <div>
                                                         <input
                                                             type="text"
-                                                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                                                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-950 ${
                                                                 formErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
                                                             }`}
                                                             value={editName}
@@ -575,7 +575,7 @@ export default function ReportsPage() {
                                                     <div>
                                                         <input
                                                             type="url"
-                                                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                                                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-950 ${
                                                                 formErrors.url ? 'border-red-300 bg-red-50' : 'border-gray-200'
                                                             }`}
                                                             value={editUrl}

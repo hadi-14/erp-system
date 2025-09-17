@@ -438,7 +438,7 @@ export default function OrdersPage() {
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-700"
+                    className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
                   >
                     <option value="all">All Orders</option>
                     <option value="approved">Approved</option>
@@ -452,7 +452,7 @@ export default function OrdersPage() {
                     placeholder="Search orders, buyers, products..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-64 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    className="block w-72 rounded-b-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
                   />
                 </div>
               </div>

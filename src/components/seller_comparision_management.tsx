@@ -411,7 +411,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <input
                       type="text"
                       placeholder="Paste Amazon URL or enter ASIN (e.g., B08XYZ1234)"
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-950"
                       value={asinInput}
                       onChange={(e) => setAsinInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAsinExtraction()}
@@ -529,7 +529,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <input
                       type="text"
                       placeholder="Search by SKU or product name..."
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-950"
                       value={ourProductSearch}
                       onChange={(e) => setOurProductSearch(e.target.value)}
                     />
@@ -634,7 +634,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <select
                       value={mappingData.mapping_priority}
                       onChange={(e) => setMappingData(prev => ({ ...prev, mapping_priority: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                     >
                       <option value={1}>High Priority - Critical competitor</option>
                       <option value={2}>Medium Priority - Important to track</option>
@@ -644,13 +644,13 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
 
                   {/* Mapping Reason */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-950 mb-2">
                       Mapping Reason
                     </label>
                     <input
                       type="text"
                       placeholder="Why compare with this competitor?"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                       value={mappingData.mapping_reason}
                       onChange={(e) => setMappingData(prev => ({ ...prev, mapping_reason: e.target.value }))}
                     />
@@ -664,7 +664,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <textarea
                       rows={3}
                       placeholder="Any additional information about this mapping..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                       value={mappingData.mapping_notes}
                       onChange={(e) => setMappingData(prev => ({ ...prev, mapping_notes: e.target.value }))}
                     />
@@ -728,7 +728,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                       <input
                         type="text"
                         placeholder="Search mappings..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                         value={mappingsSearchTerm}
                         onChange={(e) => setMappingsSearchTerm(e.target.value)}
                       />
@@ -736,7 +736,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <select
                       value={mappingsPriorityFilter}
                       onChange={(e) => setMappingsPriorityFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                     >
                       <option value="all">All Priorities</option>
                       <option value="1">High Priority</option>
@@ -746,7 +746,7 @@ const fetchCompetitorData = async (asin, mappingId = null) => {
                     <select
                       value={mappingsActiveFilter}
                       onChange={(e) => setMappingsActiveFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                     >
                       <option value="all">All Status</option>
                       <option value="active">Active Only</option>

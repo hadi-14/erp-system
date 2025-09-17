@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
-import { Search, Plus, Check, Eye, Edit, Trash2, ArrowLeftRight, Image as LucideImage, DollarSign, Package, Zap, Download, Upload, X, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Search, Plus, Check, Eye, Edit, Trash2, ArrowLeftRight, Image as LucideImage, DollarSign, Package, Zap, Download, Upload, X, AlertTriangle, CheckCircle, Info, Calendar } from 'lucide-react';
 import { getAmazonProducts, get1688Products, getMappings, editMapping, createMapping } from '@/actions/admin/product_mappings';
 import { order_mappings as OrderMapping, product_list_en as CNProduct, AMZN_PRODUCT_LIST as AmznProduct } from '@prisma/client';
 
@@ -329,7 +329,7 @@ export default function AdvancedProductMappingPage() {
         const result = await get1688Products();
         if (result && result.success) {
           setCnProducts(result.products ?? []);
-          addToast('success', 'Data Loaded', '1688 products loaded successfully');
+          // addToast('success', 'Data Loaded', '1688 products loaded successfully');
         } else {
           setCnProducts([]);
           addToast('error', 'Loading Failed', 'Failed to load 1688 products');
@@ -344,7 +344,7 @@ export default function AdvancedProductMappingPage() {
         const result = await getAmazonProducts();
         if (result && result.success) {
           setAmznProducts(result.products ?? []);
-          addToast('success', 'Data Loaded', 'Amazon products loaded successfully');
+          // addToast('success', 'Data Loaded', 'Amazon products loaded successfully');
         } else {
           setAmznProducts([]);
           addToast('error', 'Loading Failed', 'Failed to load Amazon products');
@@ -359,7 +359,7 @@ export default function AdvancedProductMappingPage() {
         const result = await getMappings();
         if (result && result.success) {
           setMappings(result.mappings ?? []);
-          addToast('info', 'Mappings Loaded', `${result.mappings?.length || 0} existing mappings found`);
+          // addToast('info', 'Mappings Loaded', `${result.mappings?.length || 0} existing mappings found`);
         } else {
           setMappings([]);
           addToast('warning', 'No Mappings', 'No existing mappings found');
@@ -698,7 +698,7 @@ export default function AdvancedProductMappingPage() {
         {activeTab === 'smart-match' && (
           <div className="space-y-6">
             {/* Smart Match Controls */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 text-slate-900">
               <h2 className="text-2xl font-semibold mb-4 flex items-center">
                 <Zap className="w-6 h-6 mr-2 text-yellow-500" />
                 AI-Powered Product Matching
@@ -770,7 +770,7 @@ export default function AdvancedProductMappingPage() {
 
             {/* Smart Suggestions */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Suggested Mappings</h3>
+              <h3 className="text-xl font-semibold mb-4 text-slate-900">Suggested Mappings</h3>
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {suggestions.map((suggestion) => (
                   <div key={suggestion.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -842,7 +842,7 @@ export default function AdvancedProductMappingPage() {
         {activeTab === 'manual' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold mb-4">Manual Product Mapping</h2>
+              <h2 className="text-2xl font-semibold mb-4 text-slate-900">Manual Product Mapping</h2>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
@@ -856,7 +856,7 @@ export default function AdvancedProductMappingPage() {
                       placeholder="Search 1688 products by name or ID..."
                       value={cnSearchTerm}
                       onChange={(e) => setCnSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-950"
                     />
                   </div>
                   <VirtualizedList
@@ -878,7 +878,7 @@ export default function AdvancedProductMappingPage() {
                       placeholder="Search Amazon products by name, SKU, or ASIN..."
                       value={amznSearchTerm}
                       onChange={(e) => setAmznSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-950"
                     />
                   </div>
                   <VirtualizedList
@@ -942,7 +942,7 @@ export default function AdvancedProductMappingPage() {
             {/* Filters */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Filter Mappings</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Filter Mappings</h3>
                 <div className="flex space-x-2">
                   <button
                     onClick={() => addToast('info', 'Export Started', 'Export functionality will be implemented')}
@@ -965,7 +965,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.confidence}
                   onChange={(e) => setFilterOptions({ ...filterOptions, confidence: e.target.value as FilterOptions['confidence'] })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Confidence</option>
                   <option value="high">High (80%+)</option>
@@ -976,7 +976,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.verified}
                   onChange={(e) => setFilterOptions({ ...filterOptions, verified: e.target.value as FilterOptions['verified'] })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Status</option>
                   <option value="verified">Verified Only</option>
@@ -986,7 +986,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.category}
                   onChange={(e) => setFilterOptions({ ...filterOptions, category: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Categories</option>
                   <option value="Electronics">Electronics</option>
@@ -995,13 +995,13 @@ export default function AdvancedProductMappingPage() {
                 </select>
 
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-950 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search mappings..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                   />
                 </div>
               </div>
@@ -1157,6 +1157,36 @@ export default function AdvancedProductMappingPage() {
               <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-green-100">Unverified</p>
+                    <p className="text-3xl font-bold">{mappings.filter(m => !m.is_verified).length}</p>
+                  </div>
+                  <Check className="w-12 h-12 text-green-200" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100">Latest Updated at</p>
+                    <span className="block text-blue-100 mt-1">
+                      {(() => {
+                        const dates = mappings
+                          .filter(m => m.verified_at)
+                          .map(m => m.verified_at)
+                          .sort((a, b) => (a && b ? b.getTime() - a.getTime() : 0));
+                        return dates.length > 0 && dates[0]
+                          ? dates[0].toLocaleDateString()
+                          : 'N/A';
+                      })()}
+                    </span>
+                  </div>
+                  <Calendar className="w-12 h-12 text-green-200" />
+                </div>
+              </div>
+
+              {/* <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-purple-100">Total Profit</p>
                     <p className="text-3xl font-bold">
                       ${mappings.reduce((sum, m) => sum + (m.price_margin || 0), 0).toFixed(0)}
@@ -1164,9 +1194,9 @@ export default function AdvancedProductMappingPage() {
                   </div>
                   <DollarSign className="w-12 h-12 text-purple-200" />
                 </div>
-              </div>
+              </div> */}
 
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+              {/* <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-orange-100">Avg Confidence</p>
@@ -1176,7 +1206,7 @@ export default function AdvancedProductMappingPage() {
                   </div>
                   <ArrowLeftRight className="w-12 h-12 text-orange-200" />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Top Profitable Mappings */}

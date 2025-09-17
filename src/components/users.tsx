@@ -347,7 +347,7 @@ export default function UsersPage() {
               <input
                 type="text"
                 placeholder="Search users..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-950"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -404,7 +404,7 @@ export default function UsersPage() {
                       name="email"
                       type="email"
                       placeholder="user@example.com"
-                      className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-950 ${
                         formErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       required
@@ -425,7 +425,7 @@ export default function UsersPage() {
                     <select
                       id="role"
                       name="role"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-950"
                       defaultValue="USER"
                     >
                       <option value="USER">User</option>
@@ -442,7 +442,7 @@ export default function UsersPage() {
                       name="password"
                       type="password"
                       placeholder="••••••••"
-                      className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-950 ${
                         formErrors.password ? 'border-red-300 bg-red-50' : 'border-gray-200'
                       }`}
                       required

@@ -285,7 +285,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search by SKU or ASIN..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-950"
                 value={searchTerm}
                 onChange={(e) => handleSearch(e.target.value)}
               />
@@ -313,7 +313,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                   <select
                     value={statusFilter}
                     onChange={(e) => handleStatusFilter(e.target.value)}
-                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200"
+                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-950"
                   >
                     <option value="all">All Statuses</option>
                     <option value="Active">Active</option>
