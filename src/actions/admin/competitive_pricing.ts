@@ -1,9 +1,7 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "@/lib/prisma"; // Use singleton instance
 import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
 
 // Types for competitor mapping
 export interface CompetitorMappingFilters {
@@ -234,7 +232,7 @@ export async function getAvailableProducts(searchTerm: string = ''): Promise<Ava
         SellerSKU: true,
         Product_Identifiers_MarketplaceASIN_ASIN: true
       },
-      take: 50,
+      // take: 50,
       distinct: ['SellerSKU']
     });
 

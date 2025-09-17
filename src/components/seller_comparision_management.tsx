@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useTransition, useEffect } from 'react';
-import { 
-  Search, 
-  Link, 
-  RefreshCw, 
-  AlertCircle, 
-  CheckCircle, 
-  Package, 
-  Target, 
+import {
+  Search,
+  Link,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
+  Package,
+  Target,
   ExternalLink,
   ArrowRight,
   Star,
@@ -94,7 +94,7 @@ const AdminCompetitorAnalysisPage = () => {
 
     try {
       const result = await extractOrValidateAsin(asinInput.trim());
-      
+
       if (result.success) {
         setExtractedAsin(result.asin);
         // Set minimal competitor details just for display purposes
@@ -117,7 +117,7 @@ const AdminCompetitorAnalysisPage = () => {
   const loadExistingMappings = async () => {
     try {
       setMappingsLoading(true);
-      
+
       const filters = {
         searchTerm: mappingsSearchTerm,
         priorityFilter: mappingsPriorityFilter,
@@ -163,7 +163,33 @@ const AdminCompetitorAnalysisPage = () => {
     setAvailableProducts([]);
   };
 
-  // Create competitor mapping
+const fetchCompetitorData = async (asin, mappingId = null) => {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/api/fetch-competitor-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        asin: asin,
+        mapping_id: mappingId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error fetching competitor data:', error);
+    throw new Error('Failed to fetch competitor data: ' + error.message);
+  }
+};
+
+// Create competitor mapping
   const handleCreateMapping = async () => {
     if (!selectedProduct || !extractedAsin) {
       setError('Please select a product and extract competitor ASIN first');
@@ -183,6 +209,34 @@ const AdminCompetitorAnalysisPage = () => {
         });
 
         if (result.success) {
+
+          try {
+            const fetchResult = await fetchCompetitorData(extractedAsin);
+
+            if (fetchResult.success) {
+              if (fetchResult.data_fetched) {
+                setSuccessMessage(
+                  `Competitor mapping created and data fetched successfully! ` +
+                  `Saved ${fetchResult.records_saved.main} main records, ` +
+                  `${fetchResult.records_saved.competitive_prices} pricing records.`
+                );
+              } else {
+                setSuccessMessage(
+                  'Competitor mapping created successfully! No competitive pricing data was available for this ASIN at this time.'
+                );
+              }
+            } else {
+              setSuccessMessage(
+                `Competitor mapping created successfully! However, failed to fetch competitor data: ${fetchResult.message}`
+              );
+            }
+          } catch (fetchError) {
+            console.error('Error fetching competitor data:', fetchError);
+            setSuccessMessage(
+              'Competitor mapping created successfully! However, there was an error fetching the competitor data. The data fetch will be retried later.'
+            );
+          }
+
           setSuccessMessage('Competitor mapping created successfully!');
           // Reset form
           setAsinInput('');
@@ -789,15 +843,13 @@ const AdminCompetitorAnalysisPage = () => {
                             <button
                               onClick={() => handleToggleStatus(mapping.id)}
                               disabled={isPending}
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                mapping.is_active
-                                  ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                                  : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
-                              } disabled:opacity-50`}
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border transition-colors ${mapping.is_active
+                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+                                } disabled:opacity-50`}
                             >
-                              <div className={`w-2 h-2 rounded-full mr-1 ${
-                                mapping.is_active ? 'bg-green-500' : 'bg-gray-500'
-                              }`}></div>
+                              <div className={`w-2 h-2 rounded-full mr-1 ${mapping.is_active ? 'bg-green-500' : 'bg-gray-500'
+                                }`}></div>
                               {mapping.is_active ? 'Active' : 'Inactive'}
                             </button>
                           </td>

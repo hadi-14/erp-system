@@ -1,9 +1,7 @@
-'use server';
+"use server";
 
-import { PrismaClient } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma"; // Use singleton instance
+import { revalidatePath } from "next/cache";
 
 // Types for server actions
 export interface CompetitivePricingFilters {
@@ -71,39 +69,39 @@ export async function getCompetitivePricingData(
 ): Promise<PaginatedResult<CompetitivePricingData>> {
   try {
     const {
-      searchTerm = '',
-      statusFilter = 'all',
+      searchTerm = "",
+      statusFilter = "all",
       page = 1,
-      limit = 10
+      limit = 10,
     } = filters;
 
     // Build where clause
     const whereClause: any = {};
-    
+
     if (searchTerm) {
       whereClause.OR = [
         {
           SellerSKU: {
             contains: searchTerm,
-            mode: 'insensitive'
-          }
+            mode: "insensitive",
+          },
         },
         {
           Product_Identifiers_MarketplaceASIN_ASIN: {
             contains: searchTerm,
-            mode: 'insensitive'
-          }
-        }
+            mode: "insensitive",
+          },
+        },
       ];
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter !== "all") {
       whereClause.status = statusFilter;
     }
 
     // Get total count for pagination
     const total = await prisma.aMZN_competitive_pricing_main.count({
-      where: whereClause
+      where: whereClause,
     });
 
     // Get paginated data with relations
@@ -112,25 +110,25 @@ export async function getCompetitivePricingData(
       include: {
         sales_rankings: {
           orderBy: {
-            created_at: 'desc'
-          }
+            created_at: "desc",
+          },
         },
         offer_listings: {
           orderBy: {
-            created_at: 'desc'
-          }
+            created_at: "desc",
+          },
         },
         competitive_prices: {
           orderBy: {
-            created_at: 'desc'
-          }
-        }
+            created_at: "desc",
+          },
+        },
       },
       orderBy: {
-        created_at: 'desc'
+        created_at: "desc",
       },
       skip: (page - 1) * limit,
-      take: limit
+      take: limit,
     });
 
     const totalPages = Math.ceil(total / limit);
@@ -141,12 +139,12 @@ export async function getCompetitivePricingData(
         page,
         limit,
         total,
-        totalPages
-      }
+        totalPages,
+      },
     };
   } catch (error) {
-    console.error('Error fetching competitive pricing data:', error);
-    throw new Error('Failed to fetch competitive pricing data', error);
+    console.error("Error fetching competitive pricing data:", error);
+    throw new Error("Failed to fetch competitive pricing data", error);
   }
 }
 
@@ -155,84 +153,90 @@ export async function getCompetitionCompetitivePricingData(
 ): Promise<PaginatedResult<CompetitivePricingData>> {
   try {
     const {
-      searchTerm = '',
-      statusFilter = 'all',
+      searchTerm = "",
+      statusFilter = "all",
       page = 1,
-      limit = 10
+      limit = 10,
     } = filters;
 
     // Build where clause for competitor data
     const whereClause: any = {};
-    
+
     if (searchTerm) {
       whereClause.OR = [
         {
           SellerSKU: {
             contains: searchTerm,
-            mode: 'insensitive'
-          }
+            mode: "insensitive",
+          },
         },
         {
           Product_Identifiers_MarketplaceASIN_ASIN: {
             contains: searchTerm,
-            mode: 'insensitive'
-          }
-        }
+            mode: "insensitive",
+          },
+        },
       ];
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter !== "all") {
       whereClause.status = statusFilter;
     }
 
     // Get total count for pagination
     const total = await prisma.aMZN_competitive_pricing_main_competitors.count({
-      where: whereClause
+      where: whereClause,
     });
 
     // Get paginated data with relations
-    const data = await prisma.aMZN_competitive_pricing_main_competitors.findMany({
-      where: whereClause,
-      include: {
-        sales_rankings: {
-          orderBy: {
-            created_at: 'desc'
-          }
+    const data =
+      await prisma.aMZN_competitive_pricing_main_competitors.findMany({
+        where: whereClause,
+        include: {
+          sales_rankings: {
+            orderBy: {
+              created_at: "desc",
+            },
+          },
+          competitive_prices: {
+            orderBy: {
+              created_at: "desc",
+            },
+          },
+          offer_listings: {
+            orderBy: {
+              created_at: "desc",
+            },
+          },
         },
-        competitive_prices: {
-          orderBy: {
-            created_at: 'desc'
-          }
+        orderBy: {
+          created_at: "desc",
         },
-        offer_listings: {
-          orderBy: {
-            created_at: 'desc'
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      skip: (page - 1) * limit,
-      take: limit
-    });
+        skip: (page - 1) * limit,
+        take: limit,
+      });
 
     const totalPages = Math.ceil(total / limit);
 
     // Transform the data to match the expected CompetitivePricingData interface
-    const transformedData: CompetitivePricingData[] = data.map(item => ({
+    const transformedData: CompetitivePricingData[] = data.map((item) => ({
       id: item.id,
       SellerSKU: item.SellerSKU,
       status: item.status,
-      Product_Identifiers_SKUIdentifier_MarketplaceId: item.Product_Identifiers_SKUIdentifier_MarketplaceId,
-      Product_Identifiers_SKUIdentifier_SellerId: item.Product_Identifiers_SKUIdentifier_SellerId,
-      Product_Identifiers_SKUIdentifier_SellerSKU: item.Product_Identifiers_SKUIdentifier_SellerSKU,
-      Product_Identifiers_MarketplaceASIN_MarketplaceId: item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-      Product_Identifiers_MarketplaceASIN_ASIN: item.Product_Identifiers_MarketplaceASIN_ASIN,
+      Product_Identifiers_SKUIdentifier_MarketplaceId:
+        item.Product_Identifiers_SKUIdentifier_MarketplaceId,
+      Product_Identifiers_SKUIdentifier_SellerId:
+        item.Product_Identifiers_SKUIdentifier_SellerId,
+      Product_Identifiers_SKUIdentifier_SellerSKU:
+        item.Product_Identifiers_SKUIdentifier_SellerSKU,
+      Product_Identifiers_MarketplaceASIN_MarketplaceId:
+        item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
+      Product_Identifiers_MarketplaceASIN_ASIN:
+        item.Product_Identifiers_MarketplaceASIN_ASIN,
       created_at: item.created_at,
       sales_rankings: item.sales_rankings,
       competitive_prices: item.competitive_prices,
-      offer_listings: item.offer_listings
+      offer_listings: item.offer_listings,
     }));
 
     return {
@@ -241,12 +245,12 @@ export async function getCompetitionCompetitivePricingData(
         page,
         limit,
         total,
-        totalPages
-      }
+        totalPages,
+      },
     };
   } catch (error) {
-    console.error('Error fetching competitor competitive pricing data:', error);
-    throw new Error('Failed to fetch competitor competitive pricing data');
+    console.error("Error fetching competitor competitive pricing data:", error);
+    throw new Error("Failed to fetch competitor competitive pricing data");
   }
 }
 
@@ -264,212 +268,228 @@ export async function getCompetitorCompetitivePricingStats(): Promise<{
       totalProducts,
       activeProducts,
       totalPricePoints,
-      totalSalesRankings
+      totalSalesRankings,
     ] = await Promise.all([
       prisma.aMZN_competitive_pricing_main_competitors.count(),
       prisma.aMZN_competitive_pricing_main_competitors.count({
-        where: { status: 'Active' }
+        where: { status: "Active" },
       }),
       prisma.aMZN_competitive_prices_competitors.count(),
-      prisma.aMZN_sales_rankings_competitors.count()
+      prisma.aMZN_sales_rankings_competitors.count(),
     ]);
 
     return {
       totalProducts,
       activeProducts,
       totalPricePoints,
-      totalSalesRankings
+      totalSalesRankings,
     };
   } catch (error) {
-    console.error('Error fetching competitor competitive pricing stats:', error);
-    throw new Error('Failed to fetch competitor dashboard statistics');
+    console.error(
+      "Error fetching competitor competitive pricing stats:",
+      error
+    );
+    throw new Error("Failed to fetch competitor dashboard statistics");
   }
 }
 
 /**
  * Get related competitive pricing data (your products vs competitors by ASIN)
  */
-export async function getRelatedCompetitivePricingData(asin?: string, sellerSku?: string): Promise<{
-  ourData: CompetitivePricingData | null;
+export async function getRelatedCompetitivePricingData(
+  asin?: string,
+  sellerSku?: string
+): Promise<{
   competitorData: CompetitivePricingData[];
 }> {
   try {
-    let ourData: CompetitivePricingData | null = null;
     let competitorData: CompetitivePricingData[] = [];
 
-    // If we have an ASIN, find our product and competitor products with same ASIN
-    if (asin) {
-      // Get our product data
-      const ourProduct = await prisma.aMZN_competitive_pricing_main.findFirst({
-        where: {
-          Product_Identifiers_MarketplaceASIN_ASIN: asin
-        },
-        include: {
-          sales_rankings: { orderBy: { created_at: 'desc' } },
-          competitive_prices: { orderBy: { created_at: 'desc' } },
-          offer_listings: { orderBy: { created_at: 'desc' } }
-        }
-      });
+    // Now get competitor data using the mappings table
+    if (asin || sellerSku) {
+      // Find competitor mappings for this product
+      const competitorMappings =
+        await prisma.competitor_product_mappings.findMany({
+          where: {
+            OR: [
+              ...(asin ? [{ our_asin: asin }] : []),
+              ...(sellerSku ? [{ our_seller_sku: sellerSku }] : []),
+            ],
+          },
+          orderBy: [{ mapping_priority: "asc" }, { created_at: "desc" }],
+        });
 
-      if (ourProduct) {
-        ourData = {
-          id: ourProduct.id,
-          SellerSKU: ourProduct.SellerSKU,
-          status: ourProduct.status,
-          Product_Identifiers_SKUIdentifier_MarketplaceId: ourProduct.Product_Identifiers_SKUIdentifier_MarketplaceId,
-          Product_Identifiers_SKUIdentifier_SellerId: ourProduct.Product_Identifiers_SKUIdentifier_SellerId,
-          Product_Identifiers_SKUIdentifier_SellerSKU: ourProduct.Product_Identifiers_SKUIdentifier_SellerSKU,
-          Product_Identifiers_MarketplaceASIN_MarketplaceId: ourProduct.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-          Product_Identifiers_MarketplaceASIN_ASIN: ourProduct.Product_Identifiers_MarketplaceASIN_ASIN,
-          created_at: ourProduct.created_at,
-          sales_rankings: ourProduct.sales_rankings,
-          competitive_prices: ourProduct.competitive_prices,
-          offer_listings: ourProduct.offer_listings
-        };
-      }
+      console.log(
+        `Found ${competitorMappings.length} competitor mappings for ASIN: ${asin}, SKU: ${sellerSku}`
+      );
 
-      // Get competitor products with same ASIN
-      const competitorProducts = await prisma.aMZN_competitive_pricing_main_competitors.findMany({
-        where: {
-          Product_Identifiers_MarketplaceASIN_ASIN: asin
-        },
-        include: {
-          sales_rankings: { orderBy: { created_at: 'desc' } },
-          competitive_prices: { orderBy: { created_at: 'desc' } },
-          offer_listings: { orderBy: { created_at: 'desc' } }
-        },
-        orderBy: {
-          created_at: 'desc'
-        }
-      });
+      if (competitorMappings.length > 0) {
+        // Get competitor ASINs from mappings
+        const competitorAsins = competitorMappings.map(
+          (mapping) => mapping.competitor_asin
+        );
 
-      competitorData = competitorProducts.map(item => ({
-        id: item.id,
-        SellerSKU: item.SellerSKU,
-        status: item.status,
-        Product_Identifiers_SKUIdentifier_MarketplaceId: item.Product_Identifiers_SKUIdentifier_MarketplaceId,
-        Product_Identifiers_SKUIdentifier_SellerId: item.Product_Identifiers_SKUIdentifier_SellerId,
-        Product_Identifiers_SKUIdentifier_SellerSKU: item.Product_Identifiers_SKUIdentifier_SellerSKU,
-        Product_Identifiers_MarketplaceASIN_MarketplaceId: item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-        Product_Identifiers_MarketplaceASIN_ASIN: item.Product_Identifiers_MarketplaceASIN_ASIN,
-        created_at: item.created_at,
-        sales_rankings: item.sales_rankings,
-        competitive_prices: item.competitive_prices,
-        offer_listings: item.offer_listings
-      }));
-    }
-
-    // If we have a seller SKU, find our product by SKU
-    if (sellerSku && !ourData) {
-      const ourProduct = await prisma.aMZN_competitive_pricing_main.findFirst({
-        where: {
-          SellerSKU: sellerSku
-        },
-        include: {
-          sales_rankings: { orderBy: { created_at: 'desc' } },
-          competitive_prices: { orderBy: { created_at: 'desc' } },
-          offer_listings: { orderBy: { created_at: 'desc' } }
-        }
-      });
-
-      if (ourProduct) {
-        ourData = {
-          id: ourProduct.id,
-          SellerSKU: ourProduct.SellerSKU,
-          status: ourProduct.status,
-          Product_Identifiers_SKUIdentifier_MarketplaceId: ourProduct.Product_Identifiers_SKUIdentifier_MarketplaceId,
-          Product_Identifiers_SKUIdentifier_SellerId: ourProduct.Product_Identifiers_SKUIdentifier_SellerId,
-          Product_Identifiers_SKUIdentifier_SellerSKU: ourProduct.Product_Identifiers_SKUIdentifier_SellerSKU,
-          Product_Identifiers_MarketplaceASIN_MarketplaceId: ourProduct.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-          Product_Identifiers_MarketplaceASIN_ASIN: ourProduct.Product_Identifiers_MarketplaceASIN_ASIN,
-          created_at: ourProduct.created_at,
-          sales_rankings: ourProduct.sales_rankings,
-          competitive_prices: ourProduct.competitive_prices,
-          offer_listings: ourProduct.offer_listings
-        };
-
-        // If we found our product by SKU and it has an ASIN, get competitors for that ASIN
-        if (ourProduct.Product_Identifiers_MarketplaceASIN_ASIN) {
-          const competitorProducts = await prisma.aMZN_competitive_pricing_main_competitors.findMany({
+        // Fetch competitor data from the competitors table using the mapped ASINs
+        const competitorProducts =
+          await prisma.aMZN_competitive_pricing_main_competitors.findMany({
             where: {
-              Product_Identifiers_MarketplaceASIN_ASIN: ourProduct.Product_Identifiers_MarketplaceASIN_ASIN
+              Product_Identifiers_MarketplaceASIN_ASIN: {
+                in: competitorAsins,
+              },
             },
             include: {
-              sales_rankings: { orderBy: { created_at: 'desc' } },
-              competitive_prices: { orderBy: { created_at: 'desc' } },
-              offer_listings: { orderBy: { created_at: 'desc' } }
+              sales_rankings: { orderBy: { created_at: "desc" } },
+              competitive_prices: { orderBy: { created_at: "desc" } },
+              offer_listings: { orderBy: { created_at: "desc" } },
             },
             orderBy: {
-              created_at: 'desc'
-            }
+              created_at: "desc",
+            },
           });
 
-          competitorData = competitorProducts.map(item => ({
+        console.log(
+          `Found ${competitorProducts.length} competitor products from competitors table`
+        );
+
+        // Map competitor products to the expected format
+        competitorData = competitorProducts.map((item) => {
+          // Find the corresponding mapping to get additional info
+          const mapping = competitorMappings.find(
+            (m) =>
+              m.competitor_asin ===
+              item.Product_Identifiers_MarketplaceASIN_ASIN
+          );
+
+          return {
+            id: item.id,
+            SellerSKU: item.SellerSKU || mapping?.competitor_seller_id,
+            status: item.status,
+            Product_Identifiers_SKUIdentifier_MarketplaceId:
+              item.Product_Identifiers_SKUIdentifier_MarketplaceId,
+            Product_Identifiers_SKUIdentifier_SellerId:
+              item.Product_Identifiers_SKUIdentifier_SellerId,
+            Product_Identifiers_SKUIdentifier_SellerSKU:
+              item.Product_Identifiers_SKUIdentifier_SellerSKU,
+            Product_Identifiers_MarketplaceASIN_MarketplaceId:
+              item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
+            Product_Identifiers_MarketplaceASIN_ASIN:
+              item.Product_Identifiers_MarketplaceASIN_ASIN,
+            created_at: item.created_at,
+            updated_at: item.created_at, // Add if you have this field
+            sales_rankings: item.sales_rankings,
+            competitive_prices: item.competitive_prices,
+            offer_listings: item.offer_listings,
+            // Additional competitor info from mapping
+            competitor_info: {
+              seller_name: mapping?.competitor_seller_name,
+              product_name: mapping?.competitor_product_name,
+              mapping_priority: mapping?.mapping_priority,
+              mapping_reason: mapping?.mapping_reason,
+              last_price_check: mapping?.last_price_check,
+              last_ranking_check: mapping?.last_ranking_check,
+            },
+          };
+        });
+
+        // If no competitors found in the competitors table, fall back to direct ASIN matching
+        // This provides backward compatibility
+        if (competitorData.length === 0 && asin) {
+          console.log(
+            "No competitors found via mappings, falling back to direct ASIN matching"
+          );
+
+          const fallbackCompetitors =
+            await prisma.aMZN_competitive_pricing_main_competitors.findMany({
+              where: {
+                Product_Identifiers_MarketplaceASIN_ASIN: asin,
+                // Exclude our own data if it somehow got into competitors table
+                NOT: {
+                  id: ourData?.id,
+                },
+              },
+              include: {
+                sales_rankings: { orderBy: { created_at: "desc" } },
+                competitive_prices: { orderBy: { created_at: "desc" } },
+                offer_listings: { orderBy: { created_at: "desc" } },
+              },
+              orderBy: {
+                created_at: "desc",
+              },
+            });
+
+          competitorData = fallbackCompetitors.map((item) => ({
             id: item.id,
             SellerSKU: item.SellerSKU,
             status: item.status,
-            Product_Identifiers_SKUIdentifier_MarketplaceId: item.Product_Identifiers_SKUIdentifier_MarketplaceId,
-            Product_Identifiers_SKUIdentifier_SellerId: item.Product_Identifiers_SKUIdentifier_SellerId,
-            Product_Identifiers_SKUIdentifier_SellerSKU: item.Product_Identifiers_SKUIdentifier_SellerSKU,
-            Product_Identifiers_MarketplaceASIN_MarketplaceId: item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-            Product_Identifiers_MarketplaceASIN_ASIN: item.Product_Identifiers_MarketplaceASIN_ASIN,
+            Product_Identifiers_SKUIdentifier_MarketplaceId:
+              item.Product_Identifiers_SKUIdentifier_MarketplaceId,
+            Product_Identifiers_SKUIdentifier_SellerId:
+              item.Product_Identifiers_SKUIdentifier_SellerId,
+            Product_Identifiers_SKUIdentifier_SellerSKU:
+              item.Product_Identifiers_SKUIdentifier_SellerSKU,
+            Product_Identifiers_MarketplaceASIN_MarketplaceId:
+              item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
+            Product_Identifiers_MarketplaceASIN_ASIN:
+              item.Product_Identifiers_MarketplaceASIN_ASIN,
             created_at: item.created_at,
+            updated_at: item.created_at,
             sales_rankings: item.sales_rankings,
             competitive_prices: item.competitive_prices,
-            offer_listings: item.offer_listings
+            offer_listings: item.offer_listings,
           }));
         }
       }
     }
 
     return {
-      ourData,
-      competitorData
+      competitorData,
     };
   } catch (error) {
-    console.error('Error fetching related competitive pricing data:', error);
-    throw new Error('Failed to fetch related competitive pricing data');
+    console.error("Error fetching related competitive pricing data:", error);
+    throw new Error("Failed to fetch related competitive pricing data");
   }
 }
 
 /**
  * Delete a competitive pricing record and all related data
  */
-export async function deleteCompetitivePricingRecord(id: number): Promise<{ success: boolean; message: string }> {
+export async function deleteCompetitivePricingRecord(
+  id: number
+): Promise<{ success: boolean; message: string }> {
   try {
     // Delete in transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
       // Delete related records first due to foreign key constraints
       await tx.aMZN_sales_rankings.deleteMany({
-        where: { competitive_pricing_main_id: id }
+        where: { competitive_pricing_main_id: id },
       });
 
       await tx.aMZN_offer_listings.deleteMany({
-        where: { competitive_pricing_main_id: id }
+        where: { competitive_pricing_main_id: id },
       });
 
       await tx.aMZN_competitive_prices.deleteMany({
-        where: { competitive_pricing_main_id: id }
+        where: { competitive_pricing_main_id: id },
       });
 
       // Delete main record
       await tx.aMZN_competitive_pricing_main.delete({
-        where: { id }
+        where: { id },
       });
     });
 
     // Revalidate the path to refresh the UI
-    revalidatePath('/dashboard/competitive-pricing');
+    revalidatePath("/dashboard/competitive-pricing");
 
     return {
       success: true,
-      message: 'Record deleted successfully'
+      message: "Record deleted successfully",
     };
   } catch (error) {
-    console.error('Error deleting competitive pricing record:', error);
+    console.error("Error deleting competitive pricing record:", error);
     return {
       success: false,
-      message: 'Failed to delete record'
+      message: "Failed to delete record",
     };
   }
 }
@@ -514,38 +534,38 @@ export async function createCompetitivePricingRecord(data: {
           Product_Identifiers_SKUIdentifier_SellerId: data.sellerId,
           Product_Identifiers_SKUIdentifier_SellerSKU: data.sellerSKU,
           Product_Identifiers_MarketplaceASIN_MarketplaceId: data.marketplaceId,
-          Product_Identifiers_MarketplaceASIN_ASIN: data.asin
-        }
+          Product_Identifiers_MarketplaceASIN_ASIN: data.asin,
+        },
       });
 
       // Create sales rankings if provided
       if (data.salesRankings && data.salesRankings.length > 0) {
         await tx.aMZN_sales_rankings.createMany({
-          data: data.salesRankings.map(ranking => ({
+          data: data.salesRankings.map((ranking) => ({
             competitive_pricing_main_id: mainRecord.id,
             seller_sku: data.sellerSKU,
             product_category_id: ranking.product_category_id,
-            rank: BigInt(ranking.rank)
-          }))
+            rank: BigInt(ranking.rank),
+          })),
         });
       }
 
       // Create offer listings if provided
       if (data.offerListings && data.offerListings.length > 0) {
         await tx.aMZN_offer_listings.createMany({
-          data: data.offerListings.map(offer => ({
+          data: data.offerListings.map((offer) => ({
             competitive_pricing_main_id: mainRecord.id,
             seller_sku: data.sellerSKU,
             condition: offer.condition,
-            count: BigInt(offer.count)
-          }))
+            count: BigInt(offer.count),
+          })),
         });
       }
 
       // Create competitive prices if provided
       if (data.competitivePrices && data.competitivePrices.length > 0) {
         await tx.aMZN_competitive_prices.createMany({
-          data: data.competitivePrices.map(price => ({
+          data: data.competitivePrices.map((price) => ({
             competitive_pricing_main_id: mainRecord.id,
             seller_sku: data.sellerSKU,
             belongs_to_requester: price.belongs_to_requester,
@@ -554,28 +574,30 @@ export async function createCompetitivePricingRecord(data: {
             offer_type: price.offer_type,
             price_amount: price.price_amount,
             price_currency: price.price_currency,
-            shipping_amount: price.shipping_amount ? BigInt(price.shipping_amount) : null,
+            shipping_amount: price.shipping_amount
+              ? BigInt(price.shipping_amount)
+              : null,
             shipping_currency: price.shipping_currency,
-            subcategory: price.subcategory
-          }))
+            subcategory: price.subcategory,
+          })),
         });
       }
 
       return mainRecord;
     });
 
-    revalidatePath('/dashboard/competitive-pricing');
+    revalidatePath("/dashboard/competitive-pricing");
 
     return {
       success: true,
-      message: 'Record created successfully',
-      id: result.id
+      message: "Record created successfully",
+      id: result.id,
     };
   } catch (error) {
-    console.error('Error creating competitive pricing record:', error);
+    console.error("Error creating competitive pricing record:", error);
     return {
       success: false,
-      message: 'Failed to create record'
+      message: "Failed to create record",
     };
   }
 }
@@ -599,27 +621,33 @@ export async function updateCompetitivePricingRecord(
       data: {
         ...(data.sellerSKU && { SellerSKU: data.sellerSKU }),
         ...(data.status && { status: data.status }),
-        ...(data.marketplaceId && { 
+        ...(data.marketplaceId && {
           Product_Identifiers_SKUIdentifier_MarketplaceId: data.marketplaceId,
-          Product_Identifiers_MarketplaceASIN_MarketplaceId: data.marketplaceId 
+          Product_Identifiers_MarketplaceASIN_MarketplaceId: data.marketplaceId,
         }),
-        ...(data.sellerId && { Product_Identifiers_SKUIdentifier_SellerId: data.sellerId }),
-        ...(data.sellerSKU && { Product_Identifiers_SKUIdentifier_SellerSKU: data.sellerSKU }),
-        ...(data.asin && { Product_Identifiers_MarketplaceASIN_ASIN: data.asin })
-      }
+        ...(data.sellerId && {
+          Product_Identifiers_SKUIdentifier_SellerId: data.sellerId,
+        }),
+        ...(data.sellerSKU && {
+          Product_Identifiers_SKUIdentifier_SellerSKU: data.sellerSKU,
+        }),
+        ...(data.asin && {
+          Product_Identifiers_MarketplaceASIN_ASIN: data.asin,
+        }),
+      },
     });
 
-    revalidatePath('/dashboard/competitive-pricing');
+    revalidatePath("/dashboard/competitive-pricing");
 
     return {
       success: true,
-      message: 'Record updated successfully'
+      message: "Record updated successfully",
     };
   } catch (error) {
-    console.error('Error updating competitive pricing record:', error);
+    console.error("Error updating competitive pricing record:", error);
     return {
       success: false,
-      message: 'Failed to update record'
+      message: "Failed to update record",
     };
   }
 }
@@ -638,32 +666,34 @@ export async function getCompetitivePricingStats(): Promise<{
       totalProducts,
       activeProducts,
       totalPricePoints,
-      totalSalesRankings
+      totalSalesRankings,
     ] = await Promise.all([
       prisma.aMZN_competitive_pricing_main.count(),
       prisma.aMZN_competitive_pricing_main.count({
-        where: { status: 'Active' }
+        where: { status: "Active" },
       }),
       prisma.aMZN_competitive_prices.count(),
-      prisma.aMZN_sales_rankings.count()
+      prisma.aMZN_sales_rankings.count(),
     ]);
 
     return {
       totalProducts,
       activeProducts,
       totalPricePoints,
-      totalSalesRankings
+      totalSalesRankings,
     };
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    throw new Error('Failed to fetch dashboard statistics');
+    console.error("Error fetching stats:", error);
+    throw new Error("Failed to fetch dashboard statistics");
   }
 }
 
 /**
  * Bulk delete competitive pricing records
  */
-export async function bulkDeleteCompetitivePricingRecords(ids: number[]): Promise<{ success: boolean; message: string; deletedCount: number }> {
+export async function bulkDeleteCompetitivePricingRecords(
+  ids: number[]
+): Promise<{ success: boolean; message: string; deletedCount: number }> {
   try {
     let deletedCount = 0;
 
@@ -671,39 +701,39 @@ export async function bulkDeleteCompetitivePricingRecords(ids: number[]): Promis
       for (const id of ids) {
         // Delete related records first
         await tx.aMZN_sales_rankings.deleteMany({
-          where: { competitive_pricing_main_id: id }
+          where: { competitive_pricing_main_id: id },
         });
 
         await tx.aMZN_offer_listings.deleteMany({
-          where: { competitive_pricing_main_id: id }
+          where: { competitive_pricing_main_id: id },
         });
 
         await tx.aMZN_competitive_prices.deleteMany({
-          where: { competitive_pricing_main_id: id }
+          where: { competitive_pricing_main_id: id },
         });
 
         // Delete main record
         const result = await tx.aMZN_competitive_pricing_main.delete({
-          where: { id }
+          where: { id },
         });
 
         if (result) deletedCount++;
       }
     });
 
-    revalidatePath('/dashboard/competitive-pricing');
+    revalidatePath("/dashboard/competitive-pricing");
 
     return {
       success: true,
       message: `${deletedCount} record(s) deleted successfully`,
-      deletedCount
+      deletedCount,
     };
   } catch (error) {
-    console.error('Error bulk deleting records:', error);
+    console.error("Error bulk deleting records:", error);
     return {
       success: false,
-      message: 'Failed to delete records',
-      deletedCount: 0
+      message: "Failed to delete records",
+      deletedCount: 0,
     };
   }
 }

@@ -439,7 +439,12 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                           <BarChart3 className="w-4 h-4 text-purple-500" />
                           <span className="font-medium text-gray-900">
                             {item.sales_rankings && item.sales_rankings.length > 0
-                              ? `#${formatBigInt(item.sales_rankings[0]?.rank)}`
+                              ? `#${formatBigInt(
+                                  item.sales_rankings.reduce(
+                                    (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                                    item.sales_rankings[0].rank
+                                  )
+                                )}`
                               : 'N/A'}
                           </span>
                         </div>

@@ -1031,20 +1031,18 @@ model order_list_en {
 }
 
 model AMZN_competitive_pricing_main {
-  id                                                Int       @id @default(autoincrement())
+  id                                                Int                      @id @default(autoincrement())
   SellerSKU                                         String?
   status                                            String?
-  Product_Identifiers_SKUIdentifier_MarketplaceId   String?   @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
-  Product_Identifiers_SKUIdentifier_SellerId        String?   @map("Product.Identifiers.SKUIdentifier.SellerId")
-  Product_Identifiers_SKUIdentifier_SellerSKU       String?   @map("Product.Identifiers.SKUIdentifier.SellerSKU")
-  Product_Identifiers_MarketplaceASIN_MarketplaceId String?   @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
-  Product_Identifiers_MarketplaceASIN_ASIN          String?   @map("Product.Identifiers.MarketplaceASIN.ASIN")
-  created_at                                        DateTime? @default(now()) @db.Timestamp(6)
-
-  // Relations to child tables
-  sales_rankings      AMZN_sales_rankings[]
-  offer_listings      AMZN_offer_listings[]
-  competitive_prices  AMZN_competitive_prices[]
+  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                  @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
+  Product_Identifiers_SKUIdentifier_SellerId        String?                  @map("Product.Identifiers.SKUIdentifier.SellerId")
+  Product_Identifiers_SKUIdentifier_SellerSKU       String?                  @map("Product.Identifiers.SKUIdentifier.SellerSKU")
+  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                  @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
+  Product_Identifiers_MarketplaceASIN_ASIN          String?                  @map("Product.Identifiers.MarketplaceASIN.ASIN")
+  created_at                                        DateTime?                @default(now()) @db.Timestamp(6)
+  competitive_prices                                AMZN_competitive_prices?
+  offer_listings                                    AMZN_offer_listings?
+  sales_rankings                                    AMZN_sales_rankings?
 
   @@index([SellerSKU], map: "idx_competitive_pricing_seller_sku")
   @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_asin")
@@ -1052,14 +1050,12 @@ model AMZN_competitive_pricing_main {
 }
 
 model AMZN_sales_rankings {
-  competitive_pricing_main_id Int?
+  competitive_pricing_main_id Int                           @id @default(autoincrement())
   seller_sku                  String?
   product_category_id         String?
   rank                        BigInt?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
-  competitive_pricing_main AMZN_competitive_pricing_main? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_sales_rankings_main_id")
   @@index([product_category_id], map: "idx_sales_rankings_category")
@@ -1068,14 +1064,12 @@ model AMZN_sales_rankings {
 }
 
 model AMZN_offer_listings {
-  competitive_pricing_main_id Int?
+  competitive_pricing_main_id Int                           @id @default(autoincrement())
   seller_sku                  String?
   condition                   String?
   count                       BigInt?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
-  competitive_pricing_main AMZN_competitive_pricing_main? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_offer_listings_main_id")
   @@index([condition], map: "idx_offer_listings_condition")
@@ -1083,7 +1077,7 @@ model AMZN_offer_listings {
 }
 
 model AMZN_competitive_prices {
-  competitive_pricing_main_id Int?
+  competitive_pricing_main_id Int                           @id @default(autoincrement())
   seller_sku                  String?
   belongs_to_requester        Boolean?
   condition                   String?
@@ -1094,10 +1088,8 @@ model AMZN_competitive_prices {
   shipping_amount             Float?
   shipping_currency           String?
   subcategory                 String?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
-  competitive_pricing_main AMZN_competitive_pricing_main? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_competitive_prices_main_id")
   @@index([condition], map: "idx_competitive_prices_condition")
@@ -1105,23 +1097,20 @@ model AMZN_competitive_prices {
   @@index([seller_sku], map: "idx_competitive_prices_seller_sku")
   @@index([price_amount], map: "idx_competitive_prices_amount")
 }
-// Fixed competitors tables schema
 
 model AMZN_competitive_pricing_main_competitors {
-  id                                                Int       @id @default(autoincrement())
+  id                                                Int                                   @id @default(autoincrement())
   SellerSKU                                         String?
   status                                            String?
-  Product_Identifiers_SKUIdentifier_MarketplaceId   String?   @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
-  Product_Identifiers_SKUIdentifier_SellerId        String?   @map("Product.Identifiers.SKUIdentifier.SellerId")
-  Product_Identifiers_SKUIdentifier_SellerSKU       String?   @map("Product.Identifiers.SKUIdentifier.SellerSKU")
-  Product_Identifiers_MarketplaceASIN_MarketplaceId String?   @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
-  Product_Identifiers_MarketplaceASIN_ASIN          String?   @map("Product.Identifiers.MarketplaceASIN.ASIN")
-  created_at                                        DateTime? @default(now()) @db.Timestamp(6)
-
-  // Relations to child tables
-  sales_rankings      AMZN_sales_rankings_competitors[]
-  offer_listings      AMZN_offer_listings_competitors[]
-  competitive_prices  AMZN_competitive_prices_competitors[]
+  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                               @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
+  Product_Identifiers_SKUIdentifier_SellerId        String?                               @map("Product.Identifiers.SKUIdentifier.SellerId")
+  Product_Identifiers_SKUIdentifier_SellerSKU       String?                               @map("Product.Identifiers.SKUIdentifier.SellerSKU")
+  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                               @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
+  Product_Identifiers_MarketplaceASIN_ASIN          String?                               @map("Product.Identifiers.MarketplaceASIN.ASIN")
+  created_at                                        DateTime?                             @default(now()) @db.Timestamp(6)
+  competitive_prices                                AMZN_competitive_prices_competitors[]
+  offer_listings                                    AMZN_offer_listings_competitors?
+  sales_rankings                                    AMZN_sales_rankings_competitors?
 
   @@index([SellerSKU], map: "idx_competitive_pricing_competitors_seller_sku")
   @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_competitors_asin")
@@ -1129,14 +1118,12 @@ model AMZN_competitive_pricing_main_competitors {
 }
 
 model AMZN_sales_rankings_competitors {
-  competitive_pricing_main_id Int?
-  seller_sku                  String?
-  product_category_id         String?
-  rank                        BigInt?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
-  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+  competitive_pricing_main_id          Int                                       @id @default(autoincrement())
+  seller_sku                           String?
+  product_category_id                  String?
+  rank                                 BigInt?
+  created_at                           DateTime?                                 @default(now()) @db.Timestamp(6)
+  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_sales_rankings_competitors_main_id")
   @@index([product_category_id], map: "idx_sales_rankings_competitors_category")
@@ -1145,14 +1132,12 @@ model AMZN_sales_rankings_competitors {
 }
 
 model AMZN_offer_listings_competitors {
-  competitive_pricing_main_id Int?
-  seller_sku                  String?
-  condition                   String?
-  count                       BigInt?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
-  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+  competitive_pricing_main_id          Int                                       @id @default(autoincrement())
+  seller_sku                           String?
+  condition                            String?
+  count                                BigInt?
+  created_at                           DateTime?                                 @default(now()) @db.Timestamp(6)
+  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_offer_listings_competitors_main_id")
   @@index([condition], map: "idx_offer_listings_competitors_condition")
@@ -1160,20 +1145,19 @@ model AMZN_offer_listings_competitors {
 }
 
 model AMZN_competitive_prices_competitors {
-  competitive_pricing_main_id Int?
-  seller_sku                  String?
-  belongs_to_requester        Boolean?
-  condition                   String?
-  fulfillment_channel         String?
-  offer_type                  String?
-  price_amount                Float?
-  price_currency              String?
-  shipping_amount             Float?
-  shipping_currency           String?
-  subcategory                 String?
-  created_at                  DateTime? @default(now()) @db.Timestamp(6)
-  id                          Int       @id @default(autoincrement())
-
+  competitive_pricing_main_id          Int?
+  seller_sku                           String?
+  belongs_to_requester                 Boolean?
+  condition                            String?
+  fulfillment_channel                  String?
+  offer_type                           String?
+  price_amount                         Float?
+  price_currency                       String?
+  shipping_amount                      Float?
+  shipping_currency                    String?
+  subcategory                          String?
+  created_at                           DateTime?                                  @default(now()) @db.Timestamp(6)
+  id                                   Int                                        @id @default(autoincrement())
   competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_competitive_prices_competitors_main_id")
@@ -1184,7 +1168,6 @@ model AMZN_competitive_prices_competitors {
 }
 
 model competitor_comparison_history {
-  id                          BigInt   @id @default(autoincrement())
   competitor_mapping_id       BigInt
   our_price                   Float?
   our_currency                String?  @db.VarChar(10)
@@ -1192,14 +1175,15 @@ model competitor_comparison_history {
   competitor_currency         String?  @db.VarChar(10)
   price_difference            Float?
   price_difference_percentage Float?
-  our_sales_rank              BigInt?
-  competitor_sales_rank       BigInt?
-  our_category_rank           BigInt?
-  competitor_category_rank    BigInt?
-  our_stock_status            String?  @db.VarChar(50)
-  competitor_stock_status     String?  @db.VarChar(50)
   comparison_date             DateTime @default(now()) @db.Timestamptz(6)
   data_source                 String?  @db.VarChar(100)
+  competitor_category_rank    BigInt?
+  competitor_sales_rank       BigInt?
+  competitor_stock_status     String?  @db.VarChar(50)
+  id                          BigInt   @id @default(autoincrement())
+  our_category_rank           BigInt?
+  our_sales_rank              BigInt?
+  our_stock_status            String?  @db.VarChar(50)
 
   @@index([comparison_date], map: "idx_comparison_history_date")
   @@index([competitor_mapping_id], map: "idx_comparison_history_mapping_id")

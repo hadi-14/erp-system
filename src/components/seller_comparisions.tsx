@@ -34,7 +34,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     totalPricePoints: 0,
     totalSalesRankings: 0
   });
-  const [competitionData, setCompetitionData] = useState<CompetitivePricingData[]>([]);
+  // const [competitionData, setCompetitionData] = useState<CompetitivePricingData[]>([]);
   const [relatedData, setRelatedData] = useState<{ [key: number]: RelatedData }>({});
   const [pagination, setPagination] = useState({
     page: 1,
@@ -81,10 +81,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
       setData(result.data);
       setPagination(result.pagination);
 
-      // Also load competition data for comparison
-      const competitiveResult: PaginatedResult<CompetitivePricingData> = await getCompetitionCompetitivePricingData(filters);
-      console.log('Fetched competition data:', competitiveResult);
-      setCompetitionData(competitiveResult.data);
+      // // Also load competition data for comparison
+      // const competitiveResult: PaginatedResult<CompetitivePricingData> = await getCompetitionCompetitivePricingData(filters);
+      // console.log('Fetched competition data:', competitiveResult);
+      // setCompetitionData(competitiveResult.data);
     } catch (err) {
       setError('Failed to load data. Please try again.');
       console.error('Error loading data:', err);
@@ -115,6 +115,8 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         item.Product_Identifiers_MarketplaceASIN_ASIN || undefined,
         item.SellerSKU || undefined
       );
+
+      console.log(`Related data for item ${item.id}:`, related);
 
       setRelatedData(prev => ({
         ...prev,
@@ -217,6 +219,13 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   const formatBigInt = (value: bigint | null) => {
     if (!value) return 'N/A';
     return Number(value).toLocaleString();
+  };
+
+  // Helper function to get competitor count for display
+  const getCompetitorCount = (itemId: number) => {
+    const related = relatedData[itemId];
+    if (!related) return 'Click to view';
+    return related.competitorData ? `${related.competitorData.length} found` : '0 found';
   };
 
   if (loading && data.length === 0) {
@@ -407,11 +416,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 text-sm rounded-xl transition-all duration-200 ${
-                        pagination.page === page
-                          ? 'bg-blue-600 text-white'
-                          : 'hover:bg-gray-50 border border-gray-200'
-                      }`}
+                      className={`w-10 h-10 text-sm rounded-xl transition-all duration-200 ${pagination.page === page
+                        ? 'bg-blue-600 text-white'
+                        : 'hover:bg-gray-50 border border-gray-200'
+                        }`}
                     >
                       {page}
                     </button>
@@ -463,7 +471,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 {data.map((item) => {
                   const related = relatedData[item.id];
                   const isLoadingRelated = loadingRelated.has(item.id);
-                  
+
                   return (
                     <React.Fragment key={item.id}>
                       {/* Main Row */}
@@ -482,14 +490,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                         </td>
                         {/* Status */}
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                            item.status === 'Active' 
-                              ? 'bg-green-100 text-green-800 border border-green-200' 
-                              : 'bg-gray-100 text-gray-800 border border-gray-200'
-                          }`}>
-                            <div className={`w-2 h-2 rounded-full mr-2 ${
-                              item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'
-                            }`}></div>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Active'
+                            ? 'bg-green-100 text-green-800 border border-green-200'
+                            : 'bg-gray-100 text-gray-800 border border-gray-200'
+                            }`}>
+                            <div className={`w-2 h-2 rounded-full mr-2 ${item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'
+                              }`}></div>
                             {item.status || 'N/A'}
                           </span>
                         </td>
@@ -499,7 +505,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             <BarChart3 className="w-4 h-4 text-purple-500" />
                             <span className="font-medium text-gray-900">
                               {item.sales_rankings && item.sales_rankings.length > 0
-                                ? `#${formatBigInt(item.sales_rankings[0]?.rank)}`
+                                ? `#${formatBigInt(
+                                  item.sales_rankings.reduce(
+                                    (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                                    item.sales_rankings[0].rank
+                                  )
+                                )}`
                                 : 'N/A'}
                             </span>
                           </div>
@@ -524,7 +535,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                               <Users className="w-4 h-4 text-orange-500" />
                             )}
                             <span className="font-medium text-gray-900">
-                              {related ? `${related.competitorData.length} found` : expandedRows.has(item.id) ? 'Loading...' : 'Click to view'}
+                              {getCompetitorCount(item.id)}
                             </span>
                           </div>
                         </td>
@@ -566,84 +577,113 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             ) : (
                               <div className="space-y-6">
                                 {/* Competition Overview */}
-                                {related && (
-                                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-                                    <div className="flex items-center gap-3 mb-6">
-                                      <ArrowRightLeft className="w-6 h-6 text-purple-600" />
-                                      <h3 className="text-xl font-semibold text-gray-900">Competition Analysis</h3>
-                                      <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                                        {related.competitorData.length} competitors found
-                                      </span>
-                                    </div>
-                                    
-                                    {related.competitorData.length > 0 ? (
-                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        {related.competitorData.map((competitor, index) => (
-                                          <div key={competitor.id} className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
-                                            <div className="flex items-center justify-between mb-4">
-                                              <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                                                  C{index + 1}
-                                                </div>
-                                                <div>
-                                                  <h4 className="font-semibold text-gray-900">Competitor {index + 1}</h4>
-                                                  <p className="text-sm text-gray-600">{competitor.SellerSKU || 'N/A'}</p>
-                                                </div>
+                                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                                  <div className="flex items-center gap-3 mb-6">
+                                    <ArrowRightLeft className="w-6 h-6 text-purple-600" />
+                                    <h3 className="text-xl font-semibold text-gray-900">Competition Analysis</h3>
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                                      {related?.competitorData?.length || 0} competitors found
+                                    </span>
+                                  </div>
+
+                                  {related?.competitorData && related.competitorData.length > 0 ? (
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                      {related.competitorData.map((competitor, index) => (
+                                        <div key={`competitor-${competitor.id}-${index}`} className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
+                                          <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                              <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                                                C{index + 1}
                                               </div>
-                                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                competitor.status === 'Active' 
-                                                  ? 'bg-green-100 text-green-800' 
-                                                  : 'bg-gray-100 text-gray-800'
-                                              }`}>
-                                                {competitor.status}
-                                              </span>
+                                              <div>
+                                                <h4 className="font-semibold text-gray-900">Competitor {index + 1}</h4>
+                                                <p className="text-sm text-gray-600">{competitor.SellerSKU || `ID: ${competitor.id}`}</p>
+                                              </div>
                                             </div>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${competitor.status === 'Active'
+                                              ? 'bg-green-100 text-green-800'
+                                              : 'bg-gray-100 text-gray-800'
+                                              }`}>
+                                              {competitor.status || 'N/A'}
+                                            </span>
+                                          </div>
 
-                                            <div className="space-y-3">
-                                              {/* Competitor Prices */}
-                                              {competitor.competitive_prices && competitor.competitive_prices.length > 0 && (
-                                                <div>
-                                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Pricing</h5>
-                                                  <div className="bg-white rounded-lg p-3">
-                                                    {competitor.competitive_prices.slice(0, 2).map((price) => (
-                                                      <div key={price.id} className="flex justify-between items-center py-1">
-                                                        <span className="text-sm text-gray-600">{price.condition}</span>
-                                                        <span className="font-semibold text-green-600">
-                                                          {formatCurrency(price.price_amount, price.price_currency)}
-                                                        </span>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              )}
-
-                                              {/* Competitor Rankings */}
-                                              {competitor.sales_rankings && competitor.sales_rankings.length > 0 && (
-                                                <div>
-                                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Sales Ranking</h5>
-                                                  <div className="bg-white rounded-lg p-3">
-                                                    <div className="flex justify-between items-center">
-                                                      <span className="text-sm text-gray-600">Rank</span>
-                                                      <span className="font-semibold text-purple-600">
-                                                        #{formatBigInt(competitor.sales_rankings[0]?.rank)}
+                                          <div className="space-y-3">
+                                            {/* Competitor Prices */}
+                                            {competitor.competitive_prices && competitor.competitive_prices.length > 0 && (
+                                              <div>
+                                                <h5 className="text-sm font-medium text-gray-700 mb-2">Pricing</h5>
+                                                <div className="bg-white rounded-lg p-3 space-y-2">
+                                                  {competitor.competitive_prices.slice(0, 3).map((price, priceIndex) => (
+                                                    <div key={`price-${price.id}-${priceIndex}`} className="flex justify-between items-center py-1">
+                                                      <span className="text-sm text-gray-600">
+                                                        {price.condition || 'N/A'}
+                                                      </span>
+                                                      <span className="font-semibold text-green-600">
+                                                        {formatCurrency(price.price_amount, price.price_currency)}
                                                       </span>
                                                     </div>
-                                                  </div>
+                                                  ))}
+                                                  {competitor.competitive_prices.length > 3 && (
+                                                    <div className="text-xs text-gray-500 text-center pt-1">
+                                                      +{competitor.competitive_prices.length - 3} more prices
+                                                    </div>
+                                                  )}
                                                 </div>
-                                              )}
+                                              </div>
+                                            )}
+
+                                            {/* Competitor Rankings */}
+                                            {competitor.sales_rankings && competitor.sales_rankings.length > 0 && (
+                                              <div>
+                                                <h5 className="text-sm font-medium text-gray-700 mb-2">Sales Ranking</h5>
+                                                <div className="bg-white rounded-lg p-3">
+                                                  <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-600">Best Rank</span>
+                                                    <span className="font-semibold text-purple-600">
+                                                      #{formatBigInt(
+                                                        competitor.sales_rankings.reduce(
+                                                          (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                                                          competitor.sales_rankings[0].rank
+                                                        )
+                                                      )}
+                                                    </span>
+                                                  </div>
+                                                  {competitor.sales_rankings[0]?.product_category_id && (
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                      Category:{' '}
+                                                      {
+                                                        competitor.sales_rankings
+                                                          .sort((a, b) => {
+                                                            if (!a.rank || !b.rank) return 0;
+                                                            return Number(a.rank) - Number(b.rank);
+                                                          })[0]?.product_category_id || 'N/A'
+                                                      }
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Additional Info */}
+                                            <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-orange-200">
+                                              <div className="flex justify-between">
+                                                <span>ASIN: {competitor.Product_Identifiers_MarketplaceASIN_ASIN || 'N/A'}</span>
+                                                <span>Updated: {formatDate(competitor.updated_at)}</span>
+                                              </div>
                                             </div>
                                           </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <div className="text-center py-8 text-gray-500">
-                                        <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                        <p className="font-medium">No competitors found</p>
-                                        <p className="text-sm">No competitor data available for this ASIN</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-8 text-gray-500">
+                                      <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                      <p className="font-medium">No competitors found</p>
+                                      <p className="text-sm">No competitor data available for this ASIN</p>
+                                    </div>
+                                  )}
+                                </div>
 
                                 {/* Your Product Details */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -654,9 +694,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       <h4 className="font-semibold text-gray-900">Your Sales Rankings</h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {item.sales_rankings.length > 0 ? (
-                                        item.sales_rankings.map((ranking) => (
-                                          <div key={ranking.id} className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                                      {item.sales_rankings && item.sales_rankings.length > 0 ? (
+                                        item.sales_rankings.map((ranking, rankIndex) => (
+                                          <div key={`ranking-${ranking.id}-${rankIndex}`} className="bg-purple-50 p-4 rounded-lg border border-purple-100">
                                             <div className="flex items-center justify-between mb-2">
                                               <span className="text-lg font-bold text-purple-700">
                                                 #{formatBigInt(ranking.rank)}
@@ -673,7 +713,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       ) : (
                                         <div className="text-center py-6 text-gray-500">
                                           <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                          No sales rankings available
+                                          <p className="text-sm">No sales rankings available</p>
                                         </div>
                                       )}
                                     </div>
@@ -686,12 +726,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       <h4 className="font-semibold text-gray-900">Your Offer Listings</h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {item.offer_listings.length > 0 ? (
-                                        item.offer_listings.map((offer) => (
-                                          <div key={offer.id} className="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                                      {item.offer_listings && item.offer_listings.length > 0 ? (
+                                        item.offer_listings.map((offer, offerIndex) => (
+                                          <div key={`offer-${offer.id}-${offerIndex}`} className="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
                                             <div className="flex items-center justify-between mb-2">
                                               <span className="text-sm font-medium text-indigo-700">
-                                                {offer.condition}
+                                                {offer.condition || 'N/A'}
                                               </span>
                                               <span className="text-lg font-bold text-indigo-700">
                                                 {formatBigInt(offer.count)}
@@ -705,7 +745,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       ) : (
                                         <div className="text-center py-6 text-gray-500">
                                           <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                          No offer listings available
+                                          <p className="text-sm">No offer listings available</p>
                                         </div>
                                       )}
                                     </div>
@@ -718,9 +758,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       <h4 className="font-semibold text-gray-900">Your Competitive Prices</h4>
                                     </div>
                                     <div className="space-y-3">
-                                      {item.competitive_prices.length > 0 ? (
-                                        item.competitive_prices.map((price) => (
-                                          <div key={price.id} className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                      {item.competitive_prices && item.competitive_prices.length > 0 ? (
+                                        item.competitive_prices.map((price, priceIndex) => (
+                                          <div key={`main-price-${price.id}-${priceIndex}`} className="bg-green-50 p-4 rounded-lg border border-green-100">
                                             <div className="text-lg font-bold text-green-700 mb-1">
                                               {formatCurrency(price.price_amount, price.price_currency)}
                                             </div>
@@ -728,11 +768,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                               {price.condition} • {price.fulfillment_channel}
                                             </div>
                                             <div className="flex items-center justify-between">
-                                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                                price.belongs_to_requester 
-                                                  ? 'bg-blue-100 text-blue-700' 
-                                                  : 'bg-orange-100 text-orange-700'
-                                              }`}>
+                                              <span className={`text-xs px-2 py-1 rounded-full ${price.belongs_to_requester
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : 'bg-orange-100 text-orange-700'
+                                                }`}>
                                                 {price.belongs_to_requester ? 'Your offer' : 'Competitor'}
                                               </span>
                                               {price.shipping_amount && Number(price.shipping_amount) > 0 && (
@@ -749,7 +788,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                       ) : (
                                         <div className="text-center py-6 text-gray-500">
                                           <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                          No competitive prices available
+                                          <p className="text-sm">No competitive prices available</p>
                                         </div>
                                       )}
                                     </div>
