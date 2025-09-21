@@ -104,29 +104,15 @@ export async function getCompetitivePricingData(
       where: whereClause,
     });
 
-    // Get paginated data with relations
+    // Get paginated data with relations (remove orderBy from include)
     const data = await prisma.aMZN_competitive_pricing_main.findMany({
       where: whereClause,
       include: {
-        sales_rankings: {
-          orderBy: {
-            created_at: "desc",
-          },
-        },
-        offer_listings: {
-          orderBy: {
-            created_at: "desc",
-          },
-        },
-        competitive_prices: {
-          orderBy: {
-            created_at: "desc",
-          },
-        },
+        sales_rankings: true,
+        offer_listings: true,
+        competitive_prices: true,
       },
-      orderBy: {
-        created_at: "desc",
-      },
+      orderBy: [{ created_at: "desc" }],
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -193,21 +179,9 @@ export async function getCompetitionCompetitivePricingData(
       await prisma.aMZN_competitive_pricing_main_competitors.findMany({
         where: whereClause,
         include: {
-          sales_rankings: {
-            orderBy: {
-              created_at: "desc",
-            },
-          },
-          competitive_prices: {
-            orderBy: {
-              created_at: "desc",
-            },
-          },
-          offer_listings: {
-            orderBy: {
-              created_at: "desc",
-            },
-          },
+          sales_rankings: true,
+          competitive_prices: true,
+          offer_listings: true,
         },
         orderBy: {
           created_at: "desc",
@@ -338,9 +312,9 @@ export async function getRelatedCompetitivePricingData(
               },
             },
             include: {
-              sales_rankings: { orderBy: { created_at: "desc" } },
-              competitive_prices: { orderBy: { created_at: "desc" } },
-              offer_listings: { orderBy: { created_at: "desc" } },
+              sales_rankings: true,
+              competitive_prices: true,
+              offer_listings: true,
             },
             orderBy: {
               created_at: "desc",

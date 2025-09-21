@@ -358,7 +358,18 @@ export default function ProductManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-slate-800">{product.sku}</div>
-                      <div className="text-sm text-slate-500">{product.asin}</div>
+                      <div
+                        className="text-sm text-slate-500 cursor-pointer hover:underline"
+                        onClick={() => {
+                          const extractedAsin = product.asin;
+                          if (extractedAsin) {
+                            window.open(`https://amazon.com/dp/${extractedAsin}`, '_blank');
+                          }
+                        }}
+                        title={product.asin ? "View on Amazon" : ""}
+                      >
+                        {product.asin}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-slate-800">{product.mainCategory}</div>

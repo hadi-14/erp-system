@@ -25,13 +25,13 @@ import {
   ChevronUp
 } from 'lucide-react';
 import {
-  extractOrValidateAsin,
   getAvailableProducts,
   createCompetitorMapping,
   getCompetitorMappingData,
   deleteCompetitorMapping,
   toggleMappingStatus
 } from '@/actions/admin/competitive_pricing';
+import { extractOrValidateAsin } from '@/lib/asin';
 
 const AdminCompetitorAnalysisPage = () => {
   // State for ASIN extraction

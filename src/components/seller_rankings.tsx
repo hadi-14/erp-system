@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import {
   getCompetitivePricingData,
   deleteCompetitivePricingRecord,
@@ -354,11 +354,10 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 text-sm rounded-xl transition-all duration-200 ${
-                        pagination.page === page
+                      className={`w-10 h-10 text-sm rounded-xl transition-all duration-200 ${pagination.page === page
                           ? 'bg-blue-600 text-white'
                           : 'hover:bg-gray-50 border border-gray-200'
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>
@@ -422,14 +421,12 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                       </td>
                       {/* Status */}
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                          item.status === 'Active' 
-                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Active'
+                            ? 'bg-green-100 text-green-800 border border-green-200'
                             : 'bg-gray-100 text-gray-800 border border-gray-200'
-                        }`}>
-                          <div className={`w-2 h-2 rounded-full mr-2 ${
-                            item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'
-                          }`}></div>
+                          }`}>
+                          <div className={`w-2 h-2 rounded-full mr-2 ${item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'
+                            }`}></div>
                           {item.status || 'N/A'}
                         </span>
                       </td>
@@ -440,11 +437,11 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                           <span className="font-medium text-gray-900">
                             {item.sales_rankings && item.sales_rankings.length > 0
                               ? `#${formatBigInt(
-                                  item.sales_rankings.reduce(
-                                    (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
-                                    item.sales_rankings[0].rank
-                                  )
-                                )}`
+                                item.sales_rankings.reduce(
+                                  (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                                  item.sales_rankings[0].rank
+                                )
+                              )}`
                               : 'N/A'}
                           </span>
                         </div>
@@ -473,6 +470,13 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                             title={expandedRows.has(item.id) ? 'Hide Details' : 'Show Details'}
                           >
                             {expandedRows.has(item.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => window.open(`https://amazon.ae/dp/${item.Product_Identifiers_MarketplaceASIN_ASIN}`, '_blank')}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View on Amazon"
+                          >
+                            <ExternalLink className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
@@ -572,11 +576,10 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                                         {price.condition} • {price.fulfillment_channel}
                                       </div>
                                       <div className="flex items-center justify-between">
-                                        <span className={`text-xs px-2 py-1 rounded-full ${
-                                          price.belongs_to_requester 
-                                            ? 'bg-blue-100 text-blue-700' 
+                                        <span className={`text-xs px-2 py-1 rounded-full ${price.belongs_to_requester
+                                            ? 'bg-blue-100 text-blue-700'
                                             : 'bg-orange-100 text-orange-700'
-                                        }`}>
+                                          }`}>
                                           {price.belongs_to_requester ? 'Your offer' : 'Competitor'}
                                         </span>
                                         {price.shipping_amount && Number(price.shipping_amount) > 0 && (

@@ -1031,7 +1031,7 @@ model order_list_en {
 }
 
 model AMZN_competitive_pricing_main {
-  id                                                Int                      @id @default(autoincrement())
+  id                                                BigInt                      @id @default(autoincrement())
   SellerSKU                                         String?
   status                                            String?
   Product_Identifiers_SKUIdentifier_MarketplaceId   String?                  @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
@@ -1040,9 +1040,9 @@ model AMZN_competitive_pricing_main {
   Product_Identifiers_MarketplaceASIN_MarketplaceId String?                  @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
   Product_Identifiers_MarketplaceASIN_ASIN          String?                  @map("Product.Identifiers.MarketplaceASIN.ASIN")
   created_at                                        DateTime?                @default(now()) @db.Timestamp(6)
-  competitive_prices                                AMZN_competitive_prices?
-  offer_listings                                    AMZN_offer_listings?
-  sales_rankings                                    AMZN_sales_rankings?
+  competitive_prices                                AMZN_competitive_prices[]
+  offer_listings                                    AMZN_offer_listings[]
+  sales_rankings                                    AMZN_sales_rankings[]
 
   @@index([SellerSKU], map: "idx_competitive_pricing_seller_sku")
   @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_asin")
@@ -1050,7 +1050,8 @@ model AMZN_competitive_pricing_main {
 }
 
 model AMZN_sales_rankings {
-  competitive_pricing_main_id Int                           @id @default(autoincrement())
+  id                          BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id BigInt                           
   seller_sku                  String?
   product_category_id         String?
   rank                        BigInt?
@@ -1064,7 +1065,8 @@ model AMZN_sales_rankings {
 }
 
 model AMZN_offer_listings {
-  competitive_pricing_main_id Int                           @id @default(autoincrement())
+  id                          BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id BigInt                           
   seller_sku                  String?
   condition                   String?
   count                       BigInt?
@@ -1077,7 +1079,8 @@ model AMZN_offer_listings {
 }
 
 model AMZN_competitive_prices {
-  competitive_pricing_main_id Int                           @id @default(autoincrement())
+  id                          BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id BigInt                           
   seller_sku                  String?
   belongs_to_requester        Boolean?
   condition                   String?
@@ -1099,7 +1102,7 @@ model AMZN_competitive_prices {
 }
 
 model AMZN_competitive_pricing_main_competitors {
-  id                                                Int                                   @id @default(autoincrement())
+  id                                                BigInt                                   @id @default(autoincrement())
   SellerSKU                                         String?
   status                                            String?
   Product_Identifiers_SKUIdentifier_MarketplaceId   String?                               @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
@@ -1109,8 +1112,8 @@ model AMZN_competitive_pricing_main_competitors {
   Product_Identifiers_MarketplaceASIN_ASIN          String?                               @map("Product.Identifiers.MarketplaceASIN.ASIN")
   created_at                                        DateTime?                             @default(now()) @db.Timestamp(6)
   competitive_prices                                AMZN_competitive_prices_competitors[]
-  offer_listings                                    AMZN_offer_listings_competitors?
-  sales_rankings                                    AMZN_sales_rankings_competitors?
+  offer_listings                                    AMZN_offer_listings_competitors[]
+  sales_rankings                                    AMZN_sales_rankings_competitors[]
 
   @@index([SellerSKU], map: "idx_competitive_pricing_competitors_seller_sku")
   @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_competitors_asin")
@@ -1118,7 +1121,8 @@ model AMZN_competitive_pricing_main_competitors {
 }
 
 model AMZN_sales_rankings_competitors {
-  competitive_pricing_main_id          Int                                       @id @default(autoincrement())
+  id                                   BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt                           
   seller_sku                           String?
   product_category_id                  String?
   rank                                 BigInt?
@@ -1132,7 +1136,8 @@ model AMZN_sales_rankings_competitors {
 }
 
 model AMZN_offer_listings_competitors {
-  competitive_pricing_main_id          Int                                       @id @default(autoincrement())
+  id                                   BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt                           
   seller_sku                           String?
   condition                            String?
   count                                BigInt?
@@ -1145,7 +1150,8 @@ model AMZN_offer_listings_competitors {
 }
 
 model AMZN_competitive_prices_competitors {
-  competitive_pricing_main_id          Int?
+  id                                   BigInt                           @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt                           
   seller_sku                           String?
   belongs_to_requester                 Boolean?
   condition                            String?
@@ -1157,7 +1163,6 @@ model AMZN_competitive_prices_competitors {
   shipping_currency                    String?
   subcategory                          String?
   created_at                           DateTime?                                  @default(now()) @db.Timestamp(6)
-  id                                   Int                                        @id @default(autoincrement())
   competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
 
   @@index([competitive_pricing_main_id], map: "idx_competitive_prices_competitors_main_id")

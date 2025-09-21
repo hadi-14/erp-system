@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft } from 'lucide-react';
+import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink } from 'lucide-react';
 import {
   getCompetitivePricingData,
   getCompetitionCompetitivePricingData,
@@ -77,7 +77,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
       const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
 
-      console.log('Fetched main data:', result);
       setData(result.data);
       setPagination(result.pagination);
 
@@ -553,6 +552,14 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             >
                               {expandedRows.has(item.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
+                            <button
+                              onClick={() => window.open(`https://amazon.ae/dp/${item.Product_Identifiers_MarketplaceASIN_ASIN}`, '_blank')}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View on Amazon"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </button>
+
                             <button
                               onClick={() => handleDelete(item.id)}
                               disabled={isPending}
