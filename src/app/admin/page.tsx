@@ -18,12 +18,12 @@ import {
     ExternalLink,
     Monitor
 } from "lucide-react";
-import UsersPage from "@/components/users";
-import ReportsPage from "@/components/reports";
-import AdvancedProductMappingPage from "@/components/product_mapping";
-import ProductManagement from "@/components/products";
-import OrdersPage from "@/components/orders";
-import AdminCompetitorAnalysisPage from "@/components/seller_comparision_management";
+import UsersPage from "@/components/admin/users";
+import ReportsPage from "@/components/admin/reports";
+import AdvancedProductMappingPage from "@/components/admin/product_mapping";
+import ProductManagement from "@/components/admin/products";
+import OrdersPage from "@/components/admin/orders";
+import AdminCompetitorAnalysisPage from "@/components/admin/seller_comparision_management";
 
 type Page = {
     id: number;
@@ -177,7 +177,7 @@ export default function AdminPagesPage() {
     };
 
     return (
-        <div className={`min-h-screen flex bg-gray-50 transition-all ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+        <div className={`max-h-screen flex bg-gray-50 transition-all ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
@@ -312,6 +312,13 @@ export default function AdminPagesPage() {
                 {/* User Menu */}
                 <div className="p-4 border-t border-gray-100">
                     <div className="relative">
+                        <button
+                            onClick={() => router.replace('/')}
+                            className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold text-sm hover:from-red-600 hover:to-orange-600 transition-all shadow-lg flex items-center justify-center"
+                        >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Switch to Main User Panel
+                        </button>
                         <button
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
                             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"

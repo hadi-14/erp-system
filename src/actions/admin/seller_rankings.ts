@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma"; // Use singleton instance
+import { compare } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
 // Types for server actions
@@ -61,6 +62,15 @@ export interface PaginatedResult<T> {
   };
 }
 
+// Updated CompetitivePricingFilters interface
+export interface CompetitivePricingFilters {
+  searchTerm?: string;
+  statusFilter?: string;
+  alertFilter?: string; // Add this
+  page?: number;
+  limit?: number;
+}
+
 /**
  * Fetch competitive pricing data with filters and pagination
  */
@@ -71,6 +81,7 @@ export async function getCompetitivePricingData(
     const {
       searchTerm = "",
       statusFilter = "all",
+      alertFilter = "all", // Add this
       page = 1,
       limit = 10,
     } = filters;
@@ -99,12 +110,86 @@ export async function getCompetitivePricingData(
       whereClause.status = statusFilter;
     }
 
+    // Handle alert filtering - this requires a more complex query
+    let alertFilteredIds: number[] | undefined;
+    
+    if (alertFilter !== "all") {
+      // First get all price alerts
+      const priceAlerts = await prisma.price_change_alerts.findMany({
+        where: {
+          is_dismissed: false,
+        },
+        select: {
+          asin: true,
+          priority: true,
+          currency: true,
+        },
+      });
+
+      // Get product-competitor mappings
+      const mappings = await prisma.competitor_product_mappings.findMany({
+        select: {
+          our_asin: true,
+          competitor_asin: true,
+        },
+      });
+
+      // Create mapping from competitor ASIN to our ASIN
+      const competitorToOurAsin = new Map();
+      mappings.forEach(mapping => {
+        if (mapping.our_asin && mapping.competitor_asin) {
+          competitorToOurAsin.set(mapping.competitor_asin, mapping.our_asin);
+        }
+      });
+
+      // Filter alerts based on our ASINs
+      let relevantAlerts = priceAlerts
+
+      console.log(relevantAlerts);
+
+      // Apply priority filtering
+      if (alertFilter === "critical_alerts") {
+        relevantAlerts = relevantAlerts.filter(alert => alert.priority === "critical");
+      } else if (alertFilter === "high_alerts") {
+        relevantAlerts = relevantAlerts.filter(alert => alert.priority === "high");
+      }
+
+      // Get ASINs that have alerts
+      const asinsWithAlerts = [...new Set(relevantAlerts.map(alert => alert.asin))];
+
+      if (alertFilter === "with_alerts" || alertFilter === "critical_alerts" || alertFilter === "high_alerts") {
+        if (asinsWithAlerts.length > 0) {
+          whereClause.Product_Identifiers_MarketplaceASIN_ASIN = {
+            in: asinsWithAlerts
+          };
+        } else {
+          // No products with alerts found, return empty result
+          return {
+            data: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          };
+        }
+      } else if (alertFilter === "without_alerts") {
+        if (asinsWithAlerts.length > 0) {
+          whereClause.Product_Identifiers_MarketplaceASIN_ASIN = {
+            notIn: asinsWithAlerts
+          };
+        }
+        // If no alerts exist, all products are "without alerts" so no additional filter needed
+      }
+    }
+
     // Get total count for pagination
     const total = await prisma.aMZN_competitive_pricing_main.count({
       where: whereClause,
     });
 
-    // Get paginated data with relations (remove orderBy from include)
+    // Get paginated data with relations
     const data = await prisma.aMZN_competitive_pricing_main.findMany({
       where: whereClause,
       include: {
@@ -130,9 +215,29 @@ export async function getCompetitivePricingData(
     };
   } catch (error) {
     console.error("Error fetching competitive pricing data:", error);
-    throw new Error("Failed to fetch competitive pricing data", error);
+    throw new Error("Failed to fetch competitive pricing data");
   }
 }
+
+export async function getCompetiveProductsMap(){
+  
+  try {
+    const data = await prisma.competitor_product_mappings.findMany({
+      select: {
+        our_asin: true,
+        competitor_asin: true,
+      }
+    });
+
+    return data;
+
+  } catch (error) {
+    console.error("Error fetching competitive products map:", error);
+    throw new Error("Failed to fetch competitive products map", error);
+  }
+}
+
+
 
 export async function getCompetitionCompetitivePricingData(
   filters: CompetitivePricingFilters = {}
@@ -643,11 +748,9 @@ export async function getCompetitivePricingStats(): Promise<{
       totalSalesRankings,
     ] = await Promise.all([
       prisma.aMZN_competitive_pricing_main.count(),
-      prisma.aMZN_competitive_pricing_main.count({
-        where: { status: "Active" },
-      }),
-      prisma.aMZN_competitive_prices.count(),
-      prisma.aMZN_sales_rankings.count(),
+      prisma.price_change_alerts.count({ where: { alert_type: "competitor_undercut" } }),
+      prisma.price_change_alerts.count({ where: { alert_type: "rank_comparison" } }),
+      prisma.aMZN_competitive_pricing_main_competitors.count(),
     ]);
 
     return {

@@ -276,7 +276,7 @@ export async function getAvailableProducts(searchTerm: string = ''): Promise<Ava
       if (product.SellerSKU) {
         results.push({
           seller_sku: product.SellerSKU,
-          asin: product.Product_Identifiers_MarketplaceASIN_ASIN,
+          asin: product.Product_Identifiers_MarketplaceASIN,
           product_name: `Product: ${product.SellerSKU}`
         });
       }
@@ -368,17 +368,60 @@ export async function createCompetitorMapping(data: {
  */
 export async function deleteCompetitorMapping(id: string): Promise<{ success: boolean; message: string }> {
   try {
+    // Find the mapping to get the competitor_asin
+    const mapping = await prisma.competitor_product_mappings.findUnique({
+      where: { id: BigInt(id) }
+    });
+
+    if (!mapping) {
+      return {
+        success: false,
+        message: 'Mapping not found'
+      };
+    }
+
+    // Delete the mapping
     await prisma.competitor_product_mappings.delete({
       where: { 
         id: BigInt(id)
       }
     });
 
+    // Delete all competitor pricing data for this ASIN
+    await prisma.$transaction([
+      prisma.aMZN_competitive_pricing_main_competitors.deleteMany({
+        where: {
+          Product_Identifiers_MarketplaceASIN_ASIN: mapping.competitor_asin
+        }
+      }),
+      prisma.aMZN_competitive_prices_competitors.deleteMany({
+        where: {
+          competitive_pricing_main_competitors: {
+            Product_Identifiers_MarketplaceASIN_ASIN: mapping.competitor_asin
+          }
+        }
+      }),
+      prisma.aMZN_offer_listings_competitors.deleteMany({
+        where: {
+          competitive_pricing_main_competitors: {
+            Product_Identifiers_MarketplaceASIN_ASIN: mapping.competitor_asin
+          }
+        }
+      }),
+      prisma.aMZN_sales_rankings_competitors.deleteMany({
+        where: {
+          competitive_pricing_main_competitors: {
+            Product_Identifiers_MarketplaceASIN_ASIN: mapping.competitor_asin
+          }
+        }
+      })
+    ]);
+
     revalidatePath('/admin/competitor-mapping');
 
     return {
       success: true,
-      message: 'Competitor mapping deleted successfully'
+      message: 'Competitor mapping and related competitor pricing data deleted successfully'
     };
   } catch (error) {
     console.error('Error deleting competitor mapping:', error);

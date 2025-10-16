@@ -363,7 +363,7 @@ export default function ProductManagement() {
                         onClick={() => {
                           const extractedAsin = product.asin;
                           if (extractedAsin) {
-                            window.open(`https://amazon.com/dp/${extractedAsin}`, '_blank');
+                            window.open(`https://amazon.ae/dp/${extractedAsin}`, '_blank');
                           }
                         }}
                         title={product.asin ? "View on Amazon" : ""}

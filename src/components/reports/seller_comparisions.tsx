@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
-import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
+import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing } from 'lucide-react';
 import {
   getCompetitivePricingData,
   getCompetitionCompetitivePricingData,
+  getCompetiveProductsMap,
   deleteCompetitivePricingRecord,
   getCompetitivePricingStats,
   getRelatedCompetitivePricingData,
@@ -12,18 +13,63 @@ import {
   PaginatedResult,
   CompetitivePricingFilters
 } from '@/actions/admin/seller_rankings';
+import {
+  getPriceAlerts,
+  markAlertAsRead,
+  dismissAlert,
+  markAllAlertsAsRead,
+  dismissMultipleAlerts
+} from '@/actions/price-alerts';
+import PriceAlertsNotification from '@/components/notifications';
 
 interface DashboardStats {
   totalProducts: number;
   activeProducts: number;
   totalPricePoints: number;
   totalSalesRankings: number;
+  productsWithAlerts: number;
 }
 
 interface RelatedData {
   ourData: CompetitivePricingData | null;
   competitorData: CompetitivePricingData[];
 }
+
+interface PriceAlert {
+  id: number;
+  asin: string;
+  seller_sku: string | null;
+  product_name: string | null;
+  old_price: number;
+  new_price: number;
+  price_change: number;
+  price_change_percent: number;
+  currency: string;
+  alert_type: string;
+  competitor_name: string | null;
+  is_read: boolean;
+  priority: string;
+  created_at: Date;
+  threshold_triggered: number | null;
+  is_dismissed: boolean;
+}
+
+// Custom hook for debouncing
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const AmazonSellerRankingsDashboard: React.FC = () => {
   // State management
@@ -32,10 +78,11 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     totalProducts: 0,
     activeProducts: 0,
     totalPricePoints: 0,
-    totalSalesRankings: 0
+    totalSalesRankings: 0,
+    productsWithAlerts: 0
   });
-  // const [competitionData, setCompetitionData] = useState<CompetitivePricingData[]>([]);
   const [relatedData, setRelatedData] = useState<{ [key: number]: RelatedData }>({});
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -46,7 +93,24 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const [alertFilter, setAlertFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(true);
+
+  // Parse URL parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const asin = params.get('asin');
+      const sku = params.get('sku');
+      
+      if (asin || sku) {
+        setSearchTerm(asin || sku || '');
+      }
+    }
+  }, []);
+
+  // Add debounced search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // UI state
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -56,55 +120,105 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
   // Transitions for server actions
   const [isPending, startTransition] = useTransition();
+  const [productCompetitorMap, setProductCompetitorMap] = useState<{ [key: string]: string }>({});
 
-  // Load data on component mount and when filters change
-  useEffect(() => {
-    loadData();
-    loadStats();
-  }, [searchTerm, statusFilter, pagination.page]);
-
-  const loadData = async () => {
+  // Memoize loadData to prevent unnecessary re-creations
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const filters: CompetitivePricingFilters = {
-        searchTerm,
+        searchTerm: debouncedSearchTerm,
         statusFilter,
         page: pagination.page,
-        limit: pagination.limit
+        limit: pagination.limit,
+        alertFilter
       };
 
       const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
+      console.log(`Fetched ${result.data.length} records out of total ${result.pagination.total}`);
 
       setData(result.data);
+      result.data.forEach(item => {
+        loadRelatedData(item);
+      });
       setPagination(result.pagination);
-
-      // // Also load competition data for comparison
-      // const competitiveResult: PaginatedResult<CompetitivePricingData> = await getCompetitionCompetitivePricingData(filters);
-      // console.log('Fetched competition data:', competitiveResult);
-      // setCompetitionData(competitiveResult.data);
     } catch (err) {
       setError('Failed to load data. Please try again.');
       console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearchTerm, statusFilter, alertFilter, pagination.page, pagination.limit]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await getCompetitivePricingStats();
       setStats(statsData);
     } catch (err) {
       console.error('Error loading stats:', err);
     }
+  }, []);
+
+  const loadPriceAlerts = useCallback(async () => {
+    try {
+      const alertsResult = await getPriceAlerts('all', 10000, 0);
+      if (alertsResult.success) {
+        setPriceAlerts(alertsResult.alerts);
+      }
+    } catch (err) {
+      console.error('Error loading price alerts:', err);
+    }
+  }, []);
+
+  const fetchProductCompetitorMap = useCallback(async () => {
+    try {
+      const data = await getCompetiveProductsMap();
+      const map: { [key: string]: string } = {};
+      data.forEach((entry: { our_asin: string, competitor_asin: string }) => {
+        if (entry.our_asin && entry.competitor_asin) {
+          map[entry.our_asin] = entry.competitor_asin;
+        }
+      });
+      setProductCompetitorMap(map);
+      console.log('Product-Competitor Map:', JSON.stringify(map));
+    } catch (err) {
+      console.error('Error fetching product-competitor map:', err);
+    }
+  }, []);
+
+  // Separate useEffect for initial load (only run once on mount)
+  useEffect(() => {
+    loadStats();
+    loadPriceAlerts();
+    fetchProductCompetitorMap();
+  }, [loadStats, loadPriceAlerts, fetchProductCompetitorMap]);
+
+  // Separate useEffect for data loading when filters change
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Helper function to check if a product has alerts
+  const hasAlerts = (asin: string, sellerSku: string | null) => {
+    return priceAlerts.some(alert =>
+      alert.asin === asin
+    );
+  };
+
+  // Get alerts for a specific product
+  const getProductAlerts = (asin: string, sellerSku: string | null) => {
+    // console.log('Getting alerts for ASIN:', asin, 'SKU:', sellerSku);
+    return priceAlerts.filter(alert =>
+      alert.asin === asin || alert.seller_sku === sellerSku
+    );
   };
 
   // Load related data for a specific item
   const loadRelatedData = async (item: CompetitivePricingData) => {
     if (relatedData[item.id] || loadingRelated.has(item.id)) {
-      return; // Already loaded or loading
+      return;
     }
 
     setLoadingRelated(prev => new Set([...prev, item.id]));
@@ -119,7 +233,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
       setRelatedData(prev => ({
         ...prev,
-        [item.id]: related
+        [item.id]: {
+          ourData: related.ourData ?? null,
+          competitorData: related.competitorData ?? []
+        }
       }));
     } catch (err) {
       console.error('Error loading related data:', err);
@@ -143,10 +260,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         const result = await deleteCompetitivePricingRecord(id);
 
         if (result.success) {
-          // Refresh data after successful deletion
-          await loadData();
-          await loadStats();
-          // Clear related data cache for this item
+          await Promise.all([loadData(), loadStats()]);
           setRelatedData(prev => {
             const newData = { ...prev };
             delete newData[id];
@@ -162,20 +276,31 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     });
   };
 
-  const handleRefresh = () => {
-    loadData();
-    loadStats();
-    setRelatedData({}); // Clear related data cache
-  };
+  // Update handleRefresh to be more explicit
+  const handleRefresh = useCallback(() => {
+    setRelatedData({});
+    Promise.all([
+      loadData(),
+      loadStats(),
+      loadPriceAlerts()
+    ]);
+  }, [loadData, loadStats, loadPriceAlerts]);
 
+  // Update the handleSearch function to just set state
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
+  // Update other filter handlers to prevent immediate calls
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleAlertFilter = (value: string) => {
+    setAlertFilter(value);
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage: number) => {
@@ -189,7 +314,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         newSet.delete(id);
       } else {
         newSet.add(id);
-        // Load related data when expanding
         loadRelatedData(item);
       }
       return newSet;
@@ -197,6 +321,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   };
 
   const formatCurrency = (amount: number | null, currency: string | null) => {
+    if (currency === 'RANK') return amount ? `#${formatBigInt(BigInt(amount))}` : 'N/A';
     if (!amount || !currency) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -227,6 +352,40 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     return related.competitorData ? `${related.competitorData.length} found` : '0 found';
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'text-red-600 bg-red-100 border-red-200';
+      case 'high':
+        return 'text-orange-600 bg-orange-100 border-orange-200';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-100 border-yellow-200';
+      case 'low':
+        return 'text-blue-600 bg-blue-100 border-blue-200';
+      default:
+        return 'text-gray-600 bg-gray-100 border-gray-200';
+    }
+  };
+
+  // Handle alert actions
+  const handleMarkAlertAsRead = async (alertId: number) => {
+    try {
+      await markAlertAsRead(alertId);
+      await loadPriceAlerts();
+    } catch (err) {
+      console.error('Error marking alert as read:', err);
+    }
+  };
+
+  const handleDismissAlert = async (alertId: number) => {
+    try {
+      await dismissAlert(alertId);
+      await loadPriceAlerts();
+    } catch (err) {
+      console.error('Error dismissing alert:', err);
+    }
+  };
+
   if (loading && data.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -253,21 +412,23 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 Monitor competitive pricing, sales rankings, and market insights
               </p>
             </div>
-            <button
+            {/* <button
               onClick={handleRefresh}
               disabled={loading}
               className="flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 disabled:opacity-50 transition-all duration-200 shadow-lg"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               Refresh Data
-            </button>
+            </button> */}
+
+            <PriceAlertsNotification />
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
@@ -283,7 +444,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Active Products</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Price Alerts</p>
                 <p className="text-3xl font-bold text-green-600">{stats.activeProducts}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-xl">
@@ -295,11 +456,11 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Price Points</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Ranks Alerts</p>
                 <p className="text-3xl font-bold text-orange-600">{stats.totalPricePoints}</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-xl">
-                <DollarSign className="w-8 h-8 text-orange-600" />
+                <BarChart3 className="w-8 h-8 text-orange-600" />
               </div>
             </div>
           </div>
@@ -307,11 +468,23 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Sales Rankings</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">Competitors</p>
                 <p className="text-3xl font-bold text-purple-600">{stats.totalSalesRankings}</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-xl">
                 <BarChart3 className="w-8 h-8 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Alerts</p>
+                <p className="text-3xl font-bold text-red-600">{priceAlerts.filter(a => !a.is_dismissed).length}</p>
+              </div>
+              <div className="p-3 bg-red-100 rounded-xl">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
             </div>
           </div>
@@ -337,7 +510,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Enhanced Controls */}
+        {/* Enhanced Controls with Alert Filter */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Search */}
@@ -381,6 +554,23 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Alerts
+                  </label>
+                  <select
+                    value={alertFilter}
+                    onChange={(e) => handleAlertFilter(e.target.value)}
+                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-950"
+                  >
+                    <option value="all">All Products</option>
+                    <option value="with_alerts">Products with Alerts</option>
+                    <option value="without_alerts">Products without Alerts</option>
+                    <option value="critical_alerts">Critical Alerts Only</option>
+                    <option value="high_alerts">High Priority Alerts</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -395,6 +585,11 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
               </span>
               {' '}of{' '}
               <span className="font-medium">{pagination.total}</span> items
+              {alertFilter !== 'all' && (
+                <span className="ml-2 text-blue-600 font-medium">
+                  ({alertFilter.replace('_', ' ')})
+                </span>
+              )}
             </p>
           </div>
 
@@ -450,16 +645,19 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Alerts
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Sales Ranking
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Price Range
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Competitors
+                    Created Date
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Created Date
+                    Competitors
                   </th>
                   <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
@@ -470,6 +668,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 {data.map((item) => {
                   const related = relatedData[item.id];
                   const isLoadingRelated = loadingRelated.has(item.id);
+                  const productAlerts = getProductAlerts(item.Product_Identifiers_MarketplaceASIN_ASIN || '', item.SellerSKU);
+                  const hasProductAlerts = productAlerts.length > 0;
+                  const highestPriority = productAlerts.reduce((highest, alert) => {
+                    const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
+                    return (priorities[alert.priority as keyof typeof priorities] || 0) > (priorities[highest as keyof typeof priorities] || 0) ? alert.priority : highest;
+                  }, 'low');
 
                   return (
                     <React.Fragment key={item.id}>
@@ -498,6 +702,24 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             {item.status || 'N/A'}
                           </span>
                         </td>
+                        {/* Price Alerts */}
+                        <td className="px-6 py-4">
+                          {hasProductAlerts ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <BellRing className="w-4 h-4 text-red-500" />
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(highestPriority)}`}>
+                                  {productAlerts.length}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-gray-400">
+                              <Bell className="w-4 h-4" />
+                              <span className="text-sm">No alerts</span>
+                            </div>
+                          )}
+                        </td>
                         {/* Sales Ranking */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -525,6 +747,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             </span>
                           </div>
                         </td>
+                        {/* Created */}
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {formatDate(item.created_at)}
+                        </td>
                         {/* Competitors */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
@@ -537,10 +763,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                               {getCompetitorCount(item.id)}
                             </span>
                           </div>
-                        </td>
-                        {/* Created */}
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {formatDate(item.created_at)}
                         </td>
                         {/* Actions */}
                         <td className="px-6 py-4">
@@ -575,7 +797,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                       {/* Expanded Details */}
                       {expandedRows.has(item.id) && (
                         <tr>
-                          <td colSpan={7} className="px-6 py-6 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
+                          <td colSpan={8} className="px-6 py-6 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
                             {isLoadingRelated ? (
                               <div className="text-center py-8">
                                 <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
@@ -583,6 +805,93 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                               </div>
                             ) : (
                               <div className="space-y-6">
+                                {/* Price Alerts Section */}
+                                {hasProductAlerts && (
+                                  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                                    <div className="flex items-center gap-3 mb-6">
+                                      <AlertTriangle className="w-6 h-6 text-red-600" />
+                                      <h3 className="text-xl font-semibold text-gray-900">Alerts</h3>
+                                      <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                                        {productAlerts.length} {productAlerts.length === 1 ? 'alert' : 'alerts'}
+                                      </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                      {productAlerts.map((alert) => (
+                                        <div key={alert.id} className={`p-4 rounded-lg border-2 ${getPriorityColor(alert.priority)}`}>
+                                          <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${getPriorityColor(alert.priority)}`}>
+                                                  {alert.priority}
+                                                </span>
+                                                <span className="text-sm text-gray-600">
+                                                  {alert.alert_type.replace('_', ' ')}
+                                                </span>
+                                              </div>
+                                              {alert.product_name && (
+                                                <p className="text-sm font-medium text-gray-900 mb-1">
+                                                  {alert.product_name}
+                                                </p>
+                                              )}
+                                            </div>
+                                            <div className="flex gap-1">
+                                              {!alert.is_read && (
+                                                <button
+                                                  onClick={() => handleMarkAlertAsRead(alert.id)}
+                                                  className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded transition-colors"
+                                                  title="Mark as read"
+                                                >
+                                                  <Eye className="w-4 h-4" />
+                                                </button>
+                                              )}
+                                              <button
+                                                onClick={() => handleDismissAlert(alert.id)}
+                                                className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                                                title="Dismiss alert"
+                                              >
+                                                <Trash2 className="w-4 h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-sm text-gray-600">{alert.alert_type === 'rank_comparision' ? 'Old Price:' : 'Our Best Rank:'}</span>
+                                              <span className="font-medium">{formatCurrency(alert.old_price, alert.currency)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-sm text-gray-600">{alert.alert_type === 'rank_comparision' ? 'New Price:' : 'Competitor Best Rank:'}</span>
+                                              <span className="font-medium">{formatCurrency(alert.new_price, alert.currency)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-sm text-gray-600">Change:</span>
+                                              <span className={`font-bold ${alert.price_change > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {alert.price_change > 0 ? '+' : ''}{formatCurrency(alert.price_change, alert.currency)}
+                                                ({alert.price_change_percent > 0 ? '+' : ''}{alert.price_change_percent.toFixed(1)}%)
+                                              </span>
+                                            </div>
+                                            {alert.competitor_name && (
+                                              <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">Competitor:</span>
+                                                <span className="text-sm font-medium">{alert.competitor_name}</span>
+                                              </div>
+                                            )}
+                                            <div className="text-xs text-gray-500 mt-2 pt-2 border-t">
+                                              {formatDate(alert.created_at)}
+                                              {!alert.is_read && (
+                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                                                  Unread
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Competition Overview */}
                                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                                   <div className="flex items-center gap-3 mb-6">
@@ -604,15 +913,24 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                               </div>
                                               <div>
                                                 <h4 className="font-semibold text-gray-900">Competitor {index + 1}</h4>
-                                                <p className="text-sm text-gray-600">{competitor.SellerSKU || `ID: ${competitor.id}`}</p>
+                                                <p className="text-sm text-gray-600">{competitor.Product_Identifiers_MarketplaceASIN_ASIN || `ID: ${competitor.id}`}</p>
                                               </div>
                                             </div>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${competitor.status === 'Active'
-                                              ? 'bg-green-100 text-green-800'
-                                              : 'bg-gray-100 text-gray-800'
-                                              }`}>
-                                              {competitor.status || 'N/A'}
-                                            </span>
+                                            <div>
+                                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${competitor.status === 'Active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {competitor.status || 'N/A'}
+                                              </span>
+                                              <button
+                                                onClick={() => window.open(`https://amazon.ae/dp/${competitor.Product_Identifiers_MarketplaceASIN_ASIN}`, '_blank')}
+                                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="View on Amazon"
+                                              >
+                                                <ExternalLink className="w-4 h-4" />
+                                              </button>
+                                            </div>
                                           </div>
 
                                           <div className="space-y-3">
@@ -762,7 +1080,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                   <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4">
                                       <DollarSign className="w-5 h-5 text-green-600" />
-                                      <h4 className="font-semibold text-gray-900">Your Competitive Prices</h4>
+                                      <h4 className="font-semibold text-gray-900">Your Prices</h4>
                                     </div>
                                     <div className="space-y-3">
                                       {item.competitive_prices && item.competitive_prices.length > 0 ? (

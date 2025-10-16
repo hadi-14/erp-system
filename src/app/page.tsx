@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense, lazy } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   RefreshCw,
@@ -26,15 +26,17 @@ type Report = {
   name: string;
   url: string;
   type: 'report';
+  slug: string; // Add slug for URL routing
 };
 
 type CustomPage = {
   id: number;
   name: string;
-  component: string; // Component name to import
+  component: string;
   type: 'page';
   description?: string;
   icon?: string;
+  slug: string; // Add slug for URL routing
 };
 
 type ContentItem = Report | CustomPage;
@@ -47,20 +49,25 @@ type User = {
 
 // Custom page components registry
 const customPageComponents: Record<string, any> = {
-  'AmazonSelerRaningsDashboard': lazy(() => import('@/components/seller_rankings')),
-  'CompetitorMappingDashboard': lazy(() => import('@/components/seller_comparisions')),
+  'AmazonSelerRaningsDashboard': lazy(() => import('@/components/reports/seller_rankings')),
+  'CompetitorMappingDashboard': lazy(() => import('@/components/reports/seller_comparisions')),
 };
 
 function camelize(str: string) {
-  return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(word, index) {
+  return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
     return index === 0 ? word.toUpperCase() : word.toLowerCase();
   }).replace(/\s+/g, '');
+}
+
+// Generate slug from name
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 }
 
 // Custom page loading component
 function CustomPageRenderer({ page }: { page: CustomPage }) {
   const Component = customPageComponents[page.component];
-  
+
   if (!Component) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -93,6 +100,7 @@ function CustomPageRenderer({ page }: { page: CustomPage }) {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -103,6 +111,29 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
+  const [contentLoaded, setContentLoaded] = useState(false);
+
+  // Update URL when content is selected
+  const updateURL = (item: ContentItem | null) => {
+    if (item) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', item.slug);
+      router.replace(`?tab=${item.slug}`, { scroll: false });
+    } else {
+      router.replace('/', { scroll: false });
+    }
+  };
+
+  // Select content and update URL
+  const selectContent = (item: ContentItem) => {
+    setSelectedContent(item);
+    updateURL(item);
+    setSidebarOpen(false);
+    if (item.type === 'page') {
+      setIsLoading(false);
+      setError(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -126,44 +157,72 @@ export default function DashboardPage() {
       try {
         const res = await fetch("/api/reports");
         const data = await res.json();
-        const reportsData = (data.reports || []).map((r: any) => ({ ...r, type: 'report' as const }));
+        const reportsData = (data.reports || []).map((r: any) => ({ 
+          ...r, 
+          type: 'report' as const,
+          slug: r.slug || slugify(r.name) // Use existing slug or generate one
+        }));
         setReports(reportsData);
+        return reportsData;
       } catch {
         setError(true);
+        return [];
       }
     };
 
     // Load custom pages
     const fetchCustomPages = async () => {
-        // If API doesn't exist yet, use default pages
-        const defaultPages: CustomPage[] = [
-          {
-            id: 1,
-            name: "Seller Rankings",
-            component: "AmazonSelerRaningsDashboard",
-            type: 'page',
-            description: "Check Seller Rankings",
-            icon: "BarChart3"
-          },
-          {
-            id: 2,
-            name: "Competitive Pricing",
-            component: "CompetitorMappingDashboard",
-            type: 'page',
-            description: "Compare prices with competitors",
-            icon: "BarChart3"
-          },
-        ];
-        setCustomPages(defaultPages);
+      const defaultPages: CustomPage[] = [
+        {
+          id: 1,
+          name: "Seller Rank",
+          component: "AmazonSelerRaningsDashboard",
+          type: 'page',
+          description: "Check Seller Rankings",
+          icon: "BarChart3",
+          slug: "seller-rankings"
+        },
+        {
+          id: 2,
+          name: "Competitive Pricing",
+          component: "CompetitorMappingDashboard",
+          type: 'page',
+          description: "Compare prices with competitors",
+          icon: "BarChart3",
+          slug: "competitive-pricing"
+        },
+      ];
+      setCustomPages(defaultPages);
+      return defaultPages;
     };
 
     const loadContent = async () => {
-      await Promise.all([fetchReports(), fetchCustomPages()]);
+      const [loadedReports, loadedPages] = await Promise.all([
+        fetchReports(), 
+        fetchCustomPages()
+      ]);
+      setContentLoaded(true);
       setIsLoading(false);
+
+      // Check for tab parameter in URL
+      const tabParam = searchParams.get('tab');
+      if (tabParam) {
+        // Find matching content by slug
+        const allContent = [...loadedReports, ...loadedPages];
+        const matchedContent = allContent.find(item => item.slug === tabParam);
+        
+        if (matchedContent) {
+          setSelectedContent(matchedContent);
+          if (matchedContent.type === 'page') {
+            setIsLoading(false);
+            setError(false);
+          }
+        }
+      }
     };
 
     loadContent();
-  }, [router]);
+  }, [router, searchParams]);
 
   const handleIframeLoad = () => {
     setIsLoading(false);
@@ -221,18 +280,11 @@ export default function DashboardPage() {
   const renderContentItem = (item: ContentItem) => {
     const isSelected = selectedContent?.id === item.id && selectedContent?.type === item.type;
     const IconComponent = item.type === 'page' ? getIconComponent((item as CustomPage).icon) : FileText;
-    
+
     return (
       <button
         key={`${item.type}-${item.id}`}
-        onClick={() => {
-          setSelectedContent(item);
-          setSidebarOpen(false);
-          if (item.type === 'page') {
-            setIsLoading(false);
-            setError(false);
-          }
-        }}
+        onClick={() => selectContent(item)}
         className={`
           w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all group
           ${isSelected
@@ -243,23 +295,20 @@ export default function DashboardPage() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <IconComponent className={`w-4 h-4 ${
-              isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
-            }`} />
+            <IconComponent className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
+              }`} />
             <div className="text-left">
               <div className="truncate">{item.name}</div>
               {item.type === 'page' && (item as CustomPage).description && (
-                <div className={`text-xs truncate ${
-                  isSelected ? 'text-blue-100' : 'text-gray-500'
-                }`}>
+                <div className={`text-xs truncate ${isSelected ? 'text-blue-100' : 'text-gray-500'
+                  }`}>
                   {(item as CustomPage).description}
                 </div>
               )}
             </div>
           </div>
-          <ChevronRight className={`w-4 h-4 transition-transform ${
-            isSelected ? 'text-white rotate-90' : 'text-gray-300 group-hover:text-gray-500'
-          }`} />
+          <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-white rotate-90' : 'text-gray-300 group-hover:text-gray-500'
+            }`} />
         </div>
       </button>
     );
@@ -395,6 +444,16 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          {/* Add admin switch button if user is admin */}
+          {userData?.role === 'ADMIN' && (
+            <button
+              onClick={() => router.replace('/admin')}
+              className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold text-sm hover:from-red-600 hover:to-orange-600 transition-all shadow-lg flex items-center justify-center"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Switch to Admin
+            </button>
+          )}
         </div>
       </aside>
 
@@ -503,7 +562,7 @@ export default function DashboardPage() {
                   {/* Report Iframe */}
                   <iframe
                     id="reportContainer"
-                    src={(selectedContent as Report).url}
+                    src={(selectedContent as Report).url + `&filterPaneEnabled=false&navContentPaneEnabled=false&actionBarEnabled=false`}
                     className="w-full h-full border-0"
                     allowFullScreen
                     onLoad={handleIframeLoad}

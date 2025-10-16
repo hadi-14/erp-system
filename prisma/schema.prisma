@@ -1172,6 +1172,56 @@ model AMZN_competitive_prices_competitors {
   @@index([price_amount], map: "idx_competitive_prices_competitors_amount")
 }
 
+// Fixed model for competitive historical prices
+model competitive_historical_prices {
+  id           BigInt    @id @default(autoincrement())
+  asin         String    @db.VarChar(20)
+  seller_sku   String?   @db.VarChar(100)
+  price        Float?
+  currency     String?   @db.VarChar(10)
+  price_type   String?   @db.VarChar(50) // 'listing', 'buybox', 'competitor'
+  condition    String?   @db.VarChar(50)
+  fulfillment_channel String? @db.VarChar(50)
+  recorded_at  DateTime  @default(now()) @db.Timestamptz(6)
+  data_source  String?   @db.VarChar(100)
+  notified     Boolean   @default(false)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([asin], map: "idx_historical_prices_asin")
+  @@index([recorded_at], map: "idx_historical_prices_recorded_at")
+  @@index([notified], map: "idx_historical_prices_notified")
+  @@index([seller_sku], map: "idx_historical_prices_seller_sku")
+}
+
+// Model for price change alerts
+model price_change_alerts {
+  id                    BigInt    @id @default(autoincrement())
+  asin                  String    @db.VarChar(20)
+  seller_sku            String?   @db.VarChar(100)
+  product_name          String?   @db.VarChar(500)
+  old_price             Float
+  new_price             Float
+  price_change          Float     // difference amount
+  price_change_percent  Float     // percentage change
+  currency              String    @db.VarChar(10)
+  alert_type            String    @db.VarChar(50) // 'price_increase', 'price_decrease', 'significant_change'
+  threshold_triggered   Float?    // the threshold that triggered this alert
+  competitor_name       String?   @db.VarChar(255)
+  is_read               Boolean   @default(false)
+  is_dismissed          Boolean   @default(false)
+  priority              String    @default("medium") @db.VarChar(20) // 'low', 'medium', 'high', 'critical'
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  read_at               DateTime? @db.Timestamptz(6)
+  dismissed_at          DateTime? @db.Timestamptz(6)
+
+  @@index([asin], map: "idx_alerts_asin")
+  @@index([is_read], map: "idx_alerts_is_read")
+  @@index([is_dismissed], map: "idx_alerts_is_dismissed")
+  @@index([created_at], map: "idx_alerts_created_at")
+  @@index([priority], map: "idx_alerts_priority")
+  @@index([alert_type], map: "idx_alerts_type")
+}
+
 model competitor_comparison_history {
   competitor_mapping_id       BigInt
   our_price                   Float?
