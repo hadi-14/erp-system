@@ -134,7 +134,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const asin = params.get('asin');
       const sku = params.get('sku');
-      
+
       if (asin || sku) {
         setSearchTerm(asin || sku || '');
       }
@@ -167,7 +167,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
       const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
       setAllData(result.data);
-      
+
       return result.data;
     } catch (err) {
       setError('Failed to load all data for sorting.');
@@ -199,7 +199,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
       console.log(`Fetched ${result.data.length} records out of total ${result.pagination.total}`);
 
       setAllData(result.data);
-      
+
       // Initialize loading states for all items
       const initialLoadingState: LoadingState = {};
       result.data.forEach(item => {
@@ -209,7 +209,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         };
       });
       setLoadingState(initialLoadingState);
-      
+
       setPagination({
         ...result.pagination,
         limit: effectiveLimit
@@ -420,7 +420,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   const getCompetitorCount = (itemId: number) => {
     const related = relatedData[itemId];
     const state = loadingState[itemId];
-    
+
     if (!state?.competitivePricingLoaded) {
       return 'Loading...';
     }
@@ -495,19 +495,19 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
   const handleSortClick = async (column: 'ranking' | 'price' | 'date') => {
     let newOrder: 'asc' | 'desc' = 'asc';
-    
+
     if (sortConfig.column === column) {
       newOrder = sortConfig.order === 'asc' ? 'desc' : 'asc';
     }
 
     setSortConfig({ column, order: newOrder });
-    
+
     const allDataForSort = await fetchAllDataForSorting();
     const sorted = sortData(allDataForSort);
-    
+
     const total = sorted.length;
     const totalPages = Math.ceil(total / effectiveLimit);
-    
+
     setAllData(sorted);
     setPagination(prev => ({
       ...prev,
@@ -534,7 +534,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   };
 
   const sortedAllData = sortData(allData);
-  
+
   const startIndex = (pagination.page - 1) * effectiveLimit;
   const endIndex = startIndex + effectiveLimit;
   const data = sortedAllData.slice(startIndex, endIndex);
@@ -667,7 +667,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 text-gray-800 transition-all duration-200"
             >
               <Filter className="w-5 h-5" />
               Filters
@@ -851,7 +851,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     </td>
                   </tr>
                 )}
-                
+
                 {!isLoadingAllData && data.map((item, idx) => {
                   const related = relatedData[item.id];
                   const state = loadingState[item.id];
@@ -864,7 +864,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
                   return (
                     <React.Fragment key={item.id}>
-                      <tr 
+                      <tr
                         className="hover:bg-gray-50/50 transition-colors duration-200"
                         data-row-id={item.id}
                       >

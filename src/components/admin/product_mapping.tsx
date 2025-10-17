@@ -134,7 +134,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </button>
             <button
               type="button"
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 text-gray-800 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
               onClick={onClose}
             >
               {cancelText}
@@ -648,7 +648,7 @@ export default function AdvancedProductMappingPage() {
   };
 
   return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
@@ -684,7 +684,7 @@ export default function AdvancedProductMappingPage() {
                 onClick={() => setActiveTab(id)}
                 className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === id
                   ? 'text-blue-700 border-blue-700'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 text-gray-800'
                   }`}
               >
                 <Icon className="w-4 h-4 mr-2" />
@@ -856,7 +856,7 @@ export default function AdvancedProductMappingPage() {
                       placeholder="Search 1688 products by name or ID..."
                       value={cnSearchTerm}
                       onChange={(e) => setCnSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-950"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-950"
                     />
                   </div>
                   <VirtualizedList
@@ -878,7 +878,7 @@ export default function AdvancedProductMappingPage() {
                       placeholder="Search Amazon products by name, SKU, or ASIN..."
                       value={amznSearchTerm}
                       onChange={(e) => setAmznSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-950"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-950"
                     />
                   </div>
                   <VirtualizedList
@@ -965,7 +965,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.confidence}
                   onChange={(e) => setFilterOptions({ ...filterOptions, confidence: e.target.value as FilterOptions['confidence'] })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
+                  className="px-3 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Confidence</option>
                   <option value="high">High (80%+)</option>
@@ -976,7 +976,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.verified}
                   onChange={(e) => setFilterOptions({ ...filterOptions, verified: e.target.value as FilterOptions['verified'] })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
+                  className="px-3 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Status</option>
                   <option value="verified">Verified Only</option>
@@ -986,7 +986,7 @@ export default function AdvancedProductMappingPage() {
                 <select
                   value={filterOptions.category}
                   onChange={(e) => setFilterOptions({ ...filterOptions, category: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
+                  className="px-3 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                 >
                   <option value="all">All Categories</option>
                   <option value="Electronics">Electronics</option>
@@ -1001,7 +1001,7 @@ export default function AdvancedProductMappingPage() {
                     placeholder="Search mappings..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-950"
                   />
                 </div>
               </div>

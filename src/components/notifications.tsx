@@ -179,13 +179,13 @@ const PriceAlertsNotification: React.FC = () => {
   const navigateToProduct = (alert: PriceAlert) => {
     const params = new URLSearchParams();
     params.set('tab', 'competitive-pricing');
-    
+
     if (alert.seller_sku) {
       params.set('sku', alert.seller_sku);
     } else if (alert.asin) {
       params.set('asin', alert.asin);
     }
-    
+
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.location.href = newUrl;
   };
@@ -362,7 +362,7 @@ const PriceAlertsNotification: React.FC = () => {
                           type="checkbox"
                           checked={selectedAlerts.has(alert.id)}
                           onChange={() => toggleSelectAlert(alert.id)}
-                          className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="mt-1 rounded border-gray-300 text-gray-800 text-blue-600 focus:ring-blue-500"
                         />
 
                         <div className="flex-1 min-w-0">

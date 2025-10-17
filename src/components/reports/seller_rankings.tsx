@@ -294,7 +294,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 text-gray-800 transition-all duration-200"
             >
               <Filter className="w-5 h-5" />
               Filters
@@ -355,8 +355,8 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                       key={page}
                       onClick={() => handlePageChange(page)}
                       className={`w-10 h-10 text-sm rounded-xl transition-all duration-200 ${pagination.page === page
-                          ? 'bg-blue-600 text-white'
-                          : 'hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-blue-600 text-white'
+                        : 'hover:bg-gray-50 border border-gray-200'
                         }`}
                     >
                       {page}
@@ -422,8 +422,8 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                       {/* Status */}
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Active'
-                            ? 'bg-green-100 text-green-800 border border-green-200'
-                            : 'bg-gray-100 text-gray-800 border border-gray-200'
+                          ? 'bg-green-100 text-green-800 border border-green-200'
+                          : 'bg-gray-100 text-gray-800 border border-gray-200'
                           }`}>
                           <div className={`w-2 h-2 rounded-full mr-2 ${item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'
                             }`}></div>
@@ -577,8 +577,8 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                                       </div>
                                       <div className="flex items-center justify-between">
                                         <span className={`text-xs px-2 py-1 rounded-full ${price.belongs_to_requester
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'bg-orange-100 text-orange-700'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-orange-100 text-orange-700'
                                           }`}>
                                           {price.belongs_to_requester ? 'Your offer' : 'Competitor'}
                                         </span>

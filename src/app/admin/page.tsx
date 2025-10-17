@@ -320,6 +320,13 @@ export default function AdminPagesPage() {
                             Switch to Main User Panel
                         </button>
                         <button
+                            onClick={() => router.replace('/admin/dashboard/stock')}
+                            className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold text-sm hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg flex items-center justify-center"
+                        >
+                            <Monitor className="w-4 h-4 mr-2" />
+                            Main Stock Management
+                        </button>
+                        <button
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
                             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"
                         >
@@ -455,7 +462,7 @@ export default function AdminPagesPage() {
                                             </button>
                                             <button
                                                 onClick={openInNewTab}
-                                                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                                                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-800 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
                                             >
                                                 <ExternalLink className="w-4 h-4 mr-2" />
                                                 Open Direct

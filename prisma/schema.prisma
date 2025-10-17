@@ -1280,3 +1280,143 @@ enum role_enum {
   USER
   ADMIN
 }
+
+// Warehouse Management
+model warehouses {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique @db.VarChar(50)
+  name            String   @db.VarChar(255)
+  location        String
+  capacity        Int
+  available_space Int
+  status          String   @default("active") @db.VarChar(20) // active, inactive, maintenance
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+  
+  racks           racks[]
+  stock_items     stock_items[]
+  
+  @@index([code])
+  @@index([status])
+}
+
+// Rack Management
+model racks {
+  id              Int      @id @default(autoincrement())
+  warehouse_id    Int
+  code            String   @db.VarChar(50)
+  level           Int // 1, 2, 3, etc
+  capacity        Int
+  available_space Int
+  status          String   @default("active") @db.VarChar(20) // active, inactive
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+  
+  warehouse       warehouses       @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  stock_items     stock_items[]
+  
+  @@unique([warehouse_id, code])
+  @@index([warehouse_id])
+  @@index([status])
+}
+
+// Stock Management
+model stock_items {
+  id                  Int      @id @default(autoincrement())
+  sku                 String   @unique @db.VarChar(100)
+  product_id          Int? // Reference to products table from existing schema
+  warehouse_id        Int?
+  rack_id             Int?
+  quantity            Int      @default(0)
+  reserved_quantity   Int      @default(0)
+  available_quantity  Int      @default(0)
+  reorder_level       Int      @default(10)
+  last_counted_at     DateTime?
+  status              String   @default("in_stock") @db.VarChar(20) // in_stock, low_stock, out_of_stock, discontinued
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @updatedAt @db.Timestamptz(6)
+  
+  warehouse           warehouses?       @relation(fields: [warehouse_id], references: [id])
+  rack                racks?            @relation(fields: [rack_id], references: [id])
+  movements           stock_movements[]
+  transit_items       transit_items[]
+  
+  @@index([sku])
+  @@index([warehouse_id])
+  @@index([rack_id])
+  @@index([status])
+}
+
+// Stock Movements (history)
+model stock_movements {
+  id              Int      @id @default(autoincrement())
+  stock_item_id   Int
+  movement_type   String   @db.VarChar(50) // inbound, outbound, adjustment, transit, received
+  quantity        Int
+  reason          String?
+  reference_id    String? // Order ID, Transit ID, etc
+  notes           String?
+  created_by      Int?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  
+  stock_item      stock_items @relation(fields: [stock_item_id], references: [id], onDelete: Cascade)
+  
+  @@index([stock_item_id])
+  @@index([movement_type])
+  @@index([created_at])
+}
+
+// Transit Management
+model transits {
+  id              Int      @id @default(autoincrement())
+  reference_no    String   @unique @db.VarChar(100)
+  from_warehouse_id Int?
+  to_warehouse_id Int?
+  status          String   @default("pending") @db.VarChar(20) // pending, in_transit, received, cancelled
+  shipped_date    DateTime?
+  expected_delivery DateTime?
+  received_date   DateTime?
+  notes           String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+  
+  items           transit_items[]
+  
+  @@index([status])
+  @@index([shipped_date])
+  @@index([reference_no])
+}
+
+// Transit Items
+model transit_items {
+  id              Int      @id @default(autoincrement())
+  transit_id      Int
+  stock_item_id   Int
+  quantity        Int
+  received_quantity Int @default(0)
+  status          String   @default("pending") @db.VarChar(20) // pending, in_transit, received
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  
+  transit         transits    @relation(fields: [transit_id], references: [id], onDelete: Cascade)
+  stock_item      stock_items @relation(fields: [stock_item_id], references: [id])
+  
+  @@index([transit_id])
+  @@index([stock_item_id])
+}
+
+// Bulk Upload History
+model bulk_uploads {
+  id              Int      @id @default(autoincrement())
+  upload_type     String   @db.VarChar(50) // stock, warehouse, rack, transit
+  file_name       String
+  total_records   Int
+  success_count   Int
+  error_count     Int
+  status          String   @db.VarChar(20) // processing, completed, failed
+  error_details   String?
+  uploaded_by     Int?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  
+  @@index([upload_type])
+  @@index([created_at])
+}

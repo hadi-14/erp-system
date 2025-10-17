@@ -101,7 +101,7 @@ export default function PriceEstimationPage() {
   const selectProduct = async (product: Product) => {
     setSelectedProduct(product);
     setSearchTerm('');
-    
+
     // Fetch latest listing price from competitive pricing data
     if (product.asin) {
       try {
@@ -110,7 +110,7 @@ export default function PriceEstimationPage() {
           limit: 1,
           page: 1,
         });
-        
+
         if (result.data.length > 0 && result.data[0].competitive_prices?.length > 0) {
           const latestPrice = result.data[0].competitive_prices[0];
           const price = latestPrice.price_amount || product.salePrice || '';
@@ -179,15 +179,15 @@ export default function PriceEstimationPage() {
           prev.map(e =>
             e.id === estimationId
               ? {
-                  ...e,
-                  referralFee,
-                  variableClosingFee,
-                  perItemFee,
-                  totalFees,
-                  profit,
-                  profitMargin,
-                  loading: false,
-                }
+                ...e,
+                referralFee,
+                variableClosingFee,
+                perItemFee,
+                totalFees,
+                profit,
+                profitMargin,
+                loading: false,
+              }
               : e
           )
         );
@@ -297,11 +297,10 @@ export default function PriceEstimationPage() {
                       <button
                         key={product.id}
                         onClick={() => selectProduct(product)}
-                        className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                          selectedProduct?.id === product.id
+                        className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${selectedProduct?.id === product.id
                             ? 'border-blue-500 bg-blue-50 shadow-md'
                             : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
@@ -509,7 +508,7 @@ export default function PriceEstimationPage() {
                                 <span className="text-gray-600">Per Item Fee:</span>
                                 <span className="font-medium text-gray-900">{formatCurrency(est.perItemFee || 0)}</span>
                               </div>
-                              <div className="border-t border-gray-300 pt-2 mt-2 flex justify-between font-semibold">
+                              <div className="border-t border-gray-300 text-gray-800 pt-2 mt-2 flex justify-between font-semibold">
                                 <span className="text-gray-900">Total Fees:</span>
                                 <span className="text-red-600">{formatCurrency(est.totalFees || 0)}</span>
                               </div>
