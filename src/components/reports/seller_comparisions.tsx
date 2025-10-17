@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useTransition, useCallback } from 'react';
-import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing } from 'lucide-react';
+import React, { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
+import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing, ArrowUpDown } from 'lucide-react';
 import {
   getCompetitivePricingData,
   getCompetitionCompetitivePricingData,
@@ -54,7 +54,13 @@ interface PriceAlert {
   is_dismissed: boolean;
 }
 
-// Custom hook for debouncing
+interface LoadingState {
+  [key: number]: {
+    basicInfoLoaded: boolean;
+    competitivePricingLoaded: boolean;
+  };
+}
+
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -71,9 +77,26 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
+const useResponsiveLimit = () => {
+  const [limit, setLimit] = useState(10);
+
+  useEffect(() => {
+    const updateLimit = () => {
+      if (window.innerWidth < 640) setLimit(5);
+      else if (window.innerWidth < 1024) setLimit(10);
+      else setLimit(15);
+    };
+
+    updateLimit();
+    window.addEventListener('resize', updateLimit);
+    return () => window.removeEventListener('resize', updateLimit);
+  }, []);
+
+  return limit;
+};
+
 const AmazonSellerRankingsDashboard: React.FC = () => {
-  // State management
-  const [data, setData] = useState<CompetitivePricingData[]>([]);
+  const [allData, setAllData] = useState<CompetitivePricingData[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     activeProducts: 0,
@@ -83,6 +106,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   });
   const [relatedData, setRelatedData] = useState<{ [key: number]: RelatedData }>({});
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>({});
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -90,13 +114,21 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     totalPages: 0
   });
 
-  // Filter state
+  const responsiveLimit = useResponsiveLimit();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [alertFilter, setAlertFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(true);
+  const [manualLimit, setManualLimit] = useState<number | null>(null);
 
-  // Parse URL parameters on mount
+  const [sortConfig, setSortConfig] = useState<{
+    column: 'ranking' | 'price' | 'date' | null;
+    order: 'asc' | 'desc';
+  }>({ column: null, order: 'asc' });
+
+  const [isLoadingAllData, setIsLoadingAllData] = useState(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -109,48 +141,93 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     }
   }, []);
 
-  // Add debounced search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // UI state
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [loadingRelated, setLoadingRelated] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Transitions for server actions
   const [isPending, startTransition] = useTransition();
   const [productCompetitorMap, setProductCompetitorMap] = useState<{ [key: string]: string }>({});
 
-  // Memoize loadData to prevent unnecessary re-creations
+  const effectiveLimit = manualLimit !== null ? manualLimit : responsiveLimit;
+
+  const fetchAllDataForSorting = useCallback(async () => {
+    try {
+      setIsLoadingAllData(true);
+      const filters: CompetitivePricingFilters = {
+        searchTerm: debouncedSearchTerm,
+        statusFilter,
+        page: 1,
+        limit: 10000,
+        alertFilter,
+        sortBy: null,
+        sortOrder: 'asc'
+      };
+
+      const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
+      setAllData(result.data);
+      
+      return result.data;
+    } catch (err) {
+      setError('Failed to load all data for sorting.');
+      console.error('Error fetching all data:', err);
+      return [];
+    } finally {
+      setIsLoadingAllData(false);
+    }
+  }, [debouncedSearchTerm, statusFilter, alertFilter]);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setLoadingState({});
+      setRelatedData({});
 
       const filters: CompetitivePricingFilters = {
         searchTerm: debouncedSearchTerm,
         statusFilter,
         page: pagination.page,
-        limit: pagination.limit,
-        alertFilter
+        limit: effectiveLimit,
+        alertFilter,
+        sortBy: null,
+        sortOrder: 'asc'
       };
 
       const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
       console.log(`Fetched ${result.data.length} records out of total ${result.pagination.total}`);
 
-      setData(result.data);
+      setAllData(result.data);
+      
+      // Initialize loading states for all items
+      const initialLoadingState: LoadingState = {};
       result.data.forEach(item => {
-        loadRelatedData(item);
+        initialLoadingState[item.id] = {
+          basicInfoLoaded: true,
+          competitivePricingLoaded: false
+        };
       });
-      setPagination(result.pagination);
+      setLoadingState(initialLoadingState);
+      
+      setPagination({
+        ...result.pagination,
+        limit: effectiveLimit
+      });
+
+      // Start sequential loading of competitive data
+      result.data.forEach((item, index) => {
+        setTimeout(() => {
+          loadRelatedData(item);
+        }, index * 100); // Stagger requests by 100ms
+      });
     } catch (err) {
       setError('Failed to load data. Please try again.');
       console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm, statusFilter, alertFilter, pagination.page, pagination.limit]);
+  }, [debouncedSearchTerm, statusFilter, alertFilter, pagination.page, effectiveLimit]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -188,40 +265,26 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     }
   }, []);
 
-  // Separate useEffect for initial load (only run once on mount)
   useEffect(() => {
     loadStats();
     loadPriceAlerts();
     fetchProductCompetitorMap();
   }, [loadStats, loadPriceAlerts, fetchProductCompetitorMap]);
 
-  // Separate useEffect for data loading when filters change
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Helper function to check if a product has alerts
-  const hasAlerts = (asin: string, sellerSku: string | null) => {
-    return priceAlerts.some(alert =>
-      alert.asin === asin
-    );
-  };
-
-  // Get alerts for a specific product
   const getProductAlerts = (asin: string, sellerSku: string | null) => {
-    // console.log('Getting alerts for ASIN:', asin, 'SKU:', sellerSku);
     return priceAlerts.filter(alert =>
       alert.asin === asin || alert.seller_sku === sellerSku
     );
   };
 
-  // Load related data for a specific item
   const loadRelatedData = async (item: CompetitivePricingData) => {
-    if (relatedData[item.id] || loadingRelated.has(item.id)) {
+    if (relatedData[item.id]) {
       return;
     }
-
-    setLoadingRelated(prev => new Set([...prev, item.id]));
 
     try {
       const related = await getRelatedCompetitivePricingData(
@@ -238,18 +301,27 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           competitorData: related.competitorData ?? []
         }
       }));
+
+      // Mark competitive pricing as loaded
+      setLoadingState(prev => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          competitivePricingLoaded: true
+        }
+      }));
     } catch (err) {
       console.error('Error loading related data:', err);
-    } finally {
-      setLoadingRelated(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(item.id);
-        return newSet;
-      });
+      setLoadingState(prev => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          competitivePricingLoaded: true
+        }
+      }));
     }
   };
 
-  // Handle delete with server action
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
@@ -276,9 +348,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     });
   };
 
-  // Update handleRefresh to be more explicit
   const handleRefresh = useCallback(() => {
     setRelatedData({});
+    setLoadingState({});
     Promise.all([
       loadData(),
       loadStats(),
@@ -286,13 +358,11 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     ]);
   }, [loadData, loadStats, loadPriceAlerts]);
 
-  // Update the handleSearch function to just set state
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  // Update other filter handlers to prevent immediate calls
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -314,7 +384,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         newSet.delete(id);
       } else {
         newSet.add(id);
-        loadRelatedData(item);
+        if (!relatedData[item.id]) {
+          loadRelatedData(item);
+        }
       }
       return newSet;
     });
@@ -345,9 +417,13 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     return Number(value).toLocaleString();
   };
 
-  // Helper function to get competitor count for display
   const getCompetitorCount = (itemId: number) => {
     const related = relatedData[itemId];
+    const state = loadingState[itemId];
+    
+    if (!state?.competitivePricingLoaded) {
+      return 'Loading...';
+    }
     if (!related) return 'Click to view';
     return related.competitorData ? `${related.competitorData.length} found` : '0 found';
   };
@@ -367,7 +443,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     }
   };
 
-  // Handle alert actions
   const handleMarkAlertAsRead = async (alertId: number) => {
     try {
       await markAlertAsRead(alertId);
@@ -386,7 +461,85 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     }
   };
 
-  if (loading && data.length === 0) {
+  const sortData = (dataToSort: CompetitivePricingData[]) => {
+    if (!sortConfig.column) return dataToSort;
+
+    return [...dataToSort].sort((a, b) => {
+      let compareA: any = 0;
+      let compareB: any = 0;
+
+      if (sortConfig.column === 'ranking') {
+        const rankA = a.sales_rankings && a.sales_rankings.length > 0
+          ? Number(a.sales_rankings.reduce((min, r) => (r.rank && (!min || r.rank < min) ? r.rank : min), a.sales_rankings[0]?.rank))
+          : Infinity;
+        const rankB = b.sales_rankings && b.sales_rankings.length > 0
+          ? Number(b.sales_rankings.reduce((min, r) => (r.rank && (!min || r.rank < min) ? r.rank : min), b.sales_rankings[0]?.rank))
+          : Infinity;
+        compareA = rankA;
+        compareB = rankB;
+      } else if (sortConfig.column === 'price') {
+        compareA = a.competitive_prices && a.competitive_prices.length > 0 ? Number(a.competitive_prices[0].price_amount) : 0;
+        compareB = b.competitive_prices && b.competitive_prices.length > 0 ? Number(b.competitive_prices[0].price_amount) : 0;
+      } else if (sortConfig.column === 'date') {
+        compareA = new Date(a.created_at).getTime();
+        compareB = new Date(b.created_at).getTime();
+      }
+
+      if (sortConfig.order === 'asc') {
+        return compareA > compareB ? 1 : compareA < compareB ? -1 : 0;
+      } else {
+        return compareA < compareB ? 1 : compareA > compareB ? -1 : 0;
+      }
+    });
+  };
+
+  const handleSortClick = async (column: 'ranking' | 'price' | 'date') => {
+    let newOrder: 'asc' | 'desc' = 'asc';
+    
+    if (sortConfig.column === column) {
+      newOrder = sortConfig.order === 'asc' ? 'desc' : 'asc';
+    }
+
+    setSortConfig({ column, order: newOrder });
+    
+    const allDataForSort = await fetchAllDataForSorting();
+    const sorted = sortData(allDataForSort);
+    
+    const total = sorted.length;
+    const totalPages = Math.ceil(total / effectiveLimit);
+    
+    setAllData(sorted);
+    setPagination(prev => ({
+      ...prev,
+      page: 1,
+      total,
+      totalPages
+    }));
+
+    // Initialize loading states and start sequential loading
+    const initialLoadingState: LoadingState = {};
+    sorted.slice(0, effectiveLimit).forEach(item => {
+      initialLoadingState[item.id] = {
+        basicInfoLoaded: true,
+        competitivePricingLoaded: false
+      };
+    });
+    setLoadingState(initialLoadingState);
+
+    sorted.slice(0, effectiveLimit).forEach((item, index) => {
+      setTimeout(() => {
+        loadRelatedData(item);
+      }, index * 100);
+    });
+  };
+
+  const sortedAllData = sortData(allData);
+  
+  const startIndex = (pagination.page - 1) * effectiveLimit;
+  const endIndex = startIndex + effectiveLimit;
+  const data = sortedAllData.slice(startIndex, endIndex);
+
+  if (loading && allData.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-2xl shadow-xl">
@@ -400,9 +553,8 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header Section with Gradient */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">
@@ -412,22 +564,13 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 Monitor competitive pricing, sales rankings, and market insights
               </p>
             </div>
-            {/* <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 disabled:opacity-50 transition-all duration-200 shadow-lg"
-            >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </button> */}
 
             <PriceAlertsNotification />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="flex items-center justify-between">
@@ -490,7 +633,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
             <div className="flex items-start gap-3">
@@ -510,10 +652,8 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Enhanced Controls with Alert Filter */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -525,7 +665,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
               />
             </div>
 
-            {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
@@ -536,7 +675,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Expanded Filters */}
           {showFilters && (
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex flex-wrap gap-4">
@@ -571,12 +709,35 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     <option value="high_alerts">High Priority Alerts</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Items Per Page
+                  </label>
+                  <select
+                    value={manualLimit ?? effectiveLimit}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setManualLimit(val === 'auto' ? null : parseInt(val));
+                      setPagination(prev => ({ ...prev, page: 1 }));
+                    }}
+                    className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-950"
+                  >
+                    <option value="auto">Auto ({effectiveLimit})</option>
+                    <option value="5">5 items</option>
+                    <option value="10">10 items</option>
+                    <option value="15">15 items</option>
+                    <option value="20">20 items</option>
+                    <option value="25">25 items</option>
+                    <option value="50">50 items</option>
+                    <option value="100">100 items</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Results Summary and Pagination */}
         <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100">
             <p className="text-sm text-gray-600">
@@ -632,7 +793,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Enhanced Main Table */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -648,13 +808,31 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     Alerts
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Sales Ranking
+                    <button
+                      onClick={() => handleSortClick('ranking')}
+                      className="flex items-center gap-2 hover:text-gray-900 transition-colors"
+                    >
+                      Sales Ranking
+                      <ArrowUpDown className={`w-4 h-4 ${sortConfig.column === 'ranking' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Price Range
+                    <button
+                      onClick={() => handleSortClick('price')}
+                      className="flex items-center gap-2 hover:text-gray-900 transition-colors"
+                    >
+                      Price Range
+                      <ArrowUpDown className={`w-4 h-4 ${sortConfig.column === 'price' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Created Date
+                    <button
+                      onClick={() => handleSortClick('date')}
+                      className="flex items-center gap-2 hover:text-gray-900 transition-colors"
+                    >
+                      Created Date
+                      <ArrowUpDown className={`w-4 h-4 ${sortConfig.column === 'date' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    </button>
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Competitors
@@ -665,9 +843,18 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data.map((item) => {
+                {isLoadingAllData && sortConfig.column && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-8 text-center">
+                      <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                      <p className="text-gray-600 font-medium">Sorting all data across pages...</p>
+                    </td>
+                  </tr>
+                )}
+                
+                {!isLoadingAllData && data.map((item, idx) => {
                   const related = relatedData[item.id];
-                  const isLoadingRelated = loadingRelated.has(item.id);
+                  const state = loadingState[item.id];
                   const productAlerts = getProductAlerts(item.Product_Identifiers_MarketplaceASIN_ASIN || '', item.SellerSKU);
                   const hasProductAlerts = productAlerts.length > 0;
                   const highestPriority = productAlerts.reduce((highest, alert) => {
@@ -677,9 +864,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
                   return (
                     <React.Fragment key={item.id}>
-                      {/* Main Row */}
-                      <tr className="hover:bg-gray-50/50 transition-colors duration-200">
-                        {/* Product Info */}
+                      <tr 
+                        className="hover:bg-gray-50/50 transition-colors duration-200"
+                        data-row-id={item.id}
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -691,7 +879,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        {/* Status */}
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Active'
                             ? 'bg-green-100 text-green-800 border border-green-200'
@@ -702,7 +889,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             {item.status || 'N/A'}
                           </span>
                         </td>
-                        {/* Price Alerts */}
                         <td className="px-6 py-4">
                           {hasProductAlerts ? (
                             <div className="flex items-center gap-2">
@@ -720,7 +906,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             </div>
                           )}
                         </td>
-                        {/* Sales Ranking */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-purple-500" />
@@ -736,7 +921,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        {/* Price Range */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <DollarSign className="w-4 h-4 text-green-500" />
@@ -747,24 +931,28 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        {/* Created */}
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {formatDate(item.created_at)}
                         </td>
-                        {/* Competitors */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            {isLoadingRelated ? (
-                              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                            {state && !state.competitivePricingLoaded ? (
+                              <>
+                                <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                                <span className="text-sm text-blue-600 font-medium">
+                                  Loading...
+                                </span>
+                              </>
                             ) : (
-                              <Users className="w-4 h-4 text-orange-500" />
+                              <>
+                                <Users className="w-4 h-4 text-orange-500" />
+                                <span className="font-medium text-gray-900">
+                                  {getCompetitorCount(item.id)}
+                                </span>
+                              </>
                             )}
-                            <span className="font-medium text-gray-900">
-                              {getCompetitorCount(item.id)}
-                            </span>
                           </div>
                         </td>
-                        {/* Actions */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 justify-end">
                             <button
@@ -794,18 +982,16 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                         </td>
                       </tr>
 
-                      {/* Expanded Details */}
                       {expandedRows.has(item.id) && (
                         <tr>
                           <td colSpan={8} className="px-6 py-6 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
-                            {isLoadingRelated ? (
+                            {state && !state.competitivePricingLoaded ? (
                               <div className="text-center py-8">
                                 <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
                                 <p className="text-gray-600 font-medium">Loading competitive analysis...</p>
                               </div>
                             ) : (
                               <div className="space-y-6">
-                                {/* Price Alerts Section */}
                                 {hasProductAlerts && (
                                   <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-3 mb-6">
@@ -892,7 +1078,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                   </div>
                                 )}
 
-                                {/* Competition Overview */}
                                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                                   <div className="flex items-center gap-3 mb-6">
                                     <ArrowRightLeft className="w-6 h-6 text-purple-600" />
@@ -934,7 +1119,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                           </div>
 
                                           <div className="space-y-3">
-                                            {/* Competitor Prices */}
                                             {competitor.competitive_prices && competitor.competitive_prices.length > 0 && (
                                               <div>
                                                 <h5 className="text-sm font-medium text-gray-700 mb-2">Pricing</h5>
@@ -958,7 +1142,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                               </div>
                                             )}
 
-                                            {/* Competitor Rankings */}
                                             {competitor.sales_rankings && competitor.sales_rankings.length > 0 && (
                                               <div>
                                                 <h5 className="text-sm font-medium text-gray-700 mb-2">Sales Ranking</h5>
@@ -990,7 +1173,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                               </div>
                                             )}
 
-                                            {/* Additional Info */}
                                             <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-orange-200">
                                               <div className="flex justify-between">
                                                 <span>ASIN: {competitor.Product_Identifiers_MarketplaceASIN_ASIN || 'N/A'}</span>
@@ -1010,9 +1192,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                   )}
                                 </div>
 
-                                {/* Your Product Details */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                  {/* Sales Rankings */}
                                   <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4">
                                       <BarChart3 className="w-5 h-5 text-purple-600" />
@@ -1044,7 +1224,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  {/* Offer Listings */}
                                   <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4">
                                       <Package className="w-5 h-5 text-indigo-600" />
@@ -1076,7 +1255,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  {/* Competitive Prices */}
                                   <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4">
                                       <DollarSign className="w-5 h-5 text-green-600" />
@@ -1130,7 +1308,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
               </tbody>
             </table>
 
-            {/* Empty State */}
             {data.length === 0 && !loading && (
               <div className="text-center py-16">
                 <div className="text-gray-400 mb-6">
@@ -1141,7 +1318,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Loading State */}
             {loading && (
               <div className="text-center py-16">
                 <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />

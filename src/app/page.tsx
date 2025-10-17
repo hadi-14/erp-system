@@ -51,6 +51,7 @@ type User = {
 const customPageComponents: Record<string, any> = {
   'AmazonSelerRaningsDashboard': lazy(() => import('@/components/reports/seller_rankings')),
   'CompetitorMappingDashboard': lazy(() => import('@/components/reports/seller_comparisions')),
+  'PriceEstimationPage': lazy(() => import('@/components/reports/price_estimation')),
 };
 
 function camelize(str: string) {
@@ -190,6 +191,15 @@ export default function DashboardPage() {
           description: "Compare prices with competitors",
           icon: "BarChart3",
           slug: "competitive-pricing"
+        },
+        {
+          id: 3,
+          name: "Price Fee Estimation",
+          component: "PriceEstimationPage",
+          type: 'page',
+          description: "Estimate fees for products",
+          icon: "BarChart3",
+          slug: "price-fee-estimation"
         },
       ];
       setCustomPages(defaultPages);
