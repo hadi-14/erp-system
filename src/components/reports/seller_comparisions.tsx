@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
-import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing, ArrowUpDown } from 'lucide-react';
+import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing, ArrowUpDown, Star } from 'lucide-react';
 import {
   getCompetitivePricingData,
   getCompetitionCompetitivePricingData,
@@ -20,6 +20,7 @@ import {
   markAllAlertsAsRead,
   dismissMultipleAlerts
 } from '@/actions/price-alerts';
+import { getProductRatings, getCompetitorRatings } from '@/actions/product-ratings';
 import PriceAlertsNotification from '@/components/notifications';
 
 interface DashboardStats {
@@ -54,10 +55,30 @@ interface PriceAlert {
   is_dismissed: boolean;
 }
 
+interface ProductRating {
+  asin: string;
+  rating: number | null;
+  review_count: number | null;
+  created_at: Date;
+}
+
+interface CompetitorRating {
+  asin: string;
+  rating: number | null;
+  competitor_name: string | null;
+  created_at: Date;
+}
+
+interface RatingData {
+  our_rating: ProductRating | null;
+  competitor_ratings: CompetitorRating[];
+}
+
 interface LoadingState {
   [key: number]: {
     basicInfoLoaded: boolean;
     competitivePricingLoaded: boolean;
+    ratingsLoaded: boolean;
   };
 }
 
@@ -95,6 +116,28 @@ const useResponsiveLimit = () => {
   return limit;
 };
 
+const RatingStars = ({ rating, reviewCount }: { rating: number | null; reviewCount: number | null }) => {
+  if (!rating) {
+    return <span className="text-sm text-gray-400">No rating</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            size={16}
+            className={i < Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+          />
+        ))}
+      </div>
+      <span className="text-sm font-medium text-gray-700">{rating.toFixed(1)}</span>
+      {reviewCount && <span className="text-xs text-gray-500">({reviewCount})</span>}
+    </div>
+  );
+};
+
 const AmazonSellerRankingsDashboard: React.FC = () => {
   const [allData, setAllData] = useState<CompetitivePricingData[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -105,6 +148,8 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     productsWithAlerts: 0
   });
   const [relatedData, setRelatedData] = useState<{ [key: number]: RelatedData }>({});
+  const [productRatings, setProductRatings] = useState<{ [key: string]: ProductRating }>({});
+  const [competitorRatings, setCompetitorRatings] = useState<{ [key: string]: CompetitorRating[] }>({});
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({});
   const [pagination, setPagination] = useState({
@@ -200,12 +245,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
       setAllData(result.data);
 
-      // Initialize loading states for all items
       const initialLoadingState: LoadingState = {};
       result.data.forEach(item => {
         initialLoadingState[item.id] = {
           basicInfoLoaded: true,
-          competitivePricingLoaded: false
+          competitivePricingLoaded: false,
+          ratingsLoaded: false
         };
       });
       setLoadingState(initialLoadingState);
@@ -215,11 +260,11 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         limit: effectiveLimit
       });
 
-      // Start sequential loading of competitive data
       result.data.forEach((item, index) => {
         setTimeout(() => {
           loadRelatedData(item);
-        }, index * 100); // Stagger requests by 100ms
+          loadProductRatings(item);
+        }, index * 100);
       });
     } catch (err) {
       setError('Failed to load data. Please try again.');
@@ -248,6 +293,58 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
       console.error('Error loading price alerts:', err);
     }
   }, []);
+
+  const loadProductRatings = async (item: CompetitivePricingData) => {
+    const asin = item.Product_Identifiers_MarketplaceASIN_ASIN;
+    if (!asin || productRatings[asin]) {
+      return;
+    }
+
+    try {
+      const ratings = await getProductRatings(asin);
+
+      if (ratings) {
+        setProductRatings(prev => ({
+          ...prev,
+          [asin]: ratings
+        }));
+      }
+
+      setLoadingState(prev => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          ratingsLoaded: true
+        }
+      }));
+    } catch (err) {
+      console.error('Error loading product ratings:', err);
+      setLoadingState(prev => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          ratingsLoaded: true
+        }
+      }));
+    }
+  };
+
+  const loadCompetitorRatings = async (item: CompetitivePricingData) => {
+    const asin = item.Product_Identifiers_MarketplaceASIN_ASIN;
+    try {
+      const ratings = await getCompetitorRatings(asin);
+      console.log('Loaded competitor ratings for ASIN', asin, ratings);
+
+      if (ratings && ratings.length > 0) {
+        setCompetitorRatings(prev => ({
+          ...prev,
+          [asin]: ratings
+        }));
+      }
+    } catch (err) {
+      console.error('Error loading competitor ratings:', err);
+    }
+  };
 
   const fetchProductCompetitorMap = useCallback(async () => {
     try {
@@ -292,6 +389,10 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         item.SellerSKU || undefined
       );
 
+      related.competitorData.forEach(competitorItem => {
+        loadCompetitorRatings(competitorItem);
+      });
+
       console.log(`Related data for item ${item.id}:`, related);
 
       setRelatedData(prev => ({
@@ -302,7 +403,6 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
         }
       }));
 
-      // Mark competitive pricing as loaded
       setLoadingState(prev => ({
         ...prev,
         [item.id]: {
@@ -351,6 +451,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   const handleRefresh = useCallback(() => {
     setRelatedData({});
     setLoadingState({});
+    setCompetitorRatings({});
     Promise.all([
       loadData(),
       loadStats(),
@@ -516,12 +617,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
       totalPages
     }));
 
-    // Initialize loading states and start sequential loading
     const initialLoadingState: LoadingState = {};
     sorted.slice(0, effectiveLimit).forEach(item => {
       initialLoadingState[item.id] = {
         basicInfoLoaded: true,
-        competitivePricingLoaded: false
+        competitivePricingLoaded: false,
+        ratingsLoaded: false
       };
     });
     setLoadingState(initialLoadingState);
@@ -529,6 +630,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     sorted.slice(0, effectiveLimit).forEach((item, index) => {
       setTimeout(() => {
         loadRelatedData(item);
+        loadProductRatings(item);
       }, index * 100);
     });
   };
@@ -805,6 +907,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                     Status
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Ratings
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Alerts
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -845,7 +950,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {isLoadingAllData && sortConfig.column && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center">
+                    <td colSpan={9} className="px-6 py-8 text-center">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
                       <p className="text-gray-600 font-medium">Sorting all data across pages...</p>
                     </td>
@@ -888,6 +993,19 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                               }`}></div>
                             {item.status || 'N/A'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {state && !state.ratingsLoaded ? (
+                            <div className="flex items-center gap-2">
+                              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                              <span className="text-sm text-blue-600 font-medium">Loading...</span>
+                            </div>
+                          ) : (
+                            <RatingStars
+                              rating={productRatings[item.Product_Identifiers_MarketplaceASIN_ASIN]?.rating || null}
+                              reviewCount={productRatings[item.Product_Identifiers_MarketplaceASIN_ASIN]?.review_count || null}
+                            />
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           {hasProductAlerts ? (
@@ -984,7 +1102,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
                       {expandedRows.has(item.id) && (
                         <tr>
-                          <td colSpan={8} className="px-6 py-6 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
+                          <td colSpan={9} className="px-6 py-6 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
                             {state && !state.competitivePricingLoaded ? (
                               <div className="text-center py-8">
                                 <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
@@ -1054,7 +1172,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                               <span className="text-sm text-gray-600">Change:</span>
                                               <span className={`font-bold ${alert.price_change > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                                 {alert.price_change > 0 ? '+' : ''}{formatCurrency(alert.price_change, alert.currency)}
-                                                ({alert.price_change_percent > 0 ? '+' : ''}{alert.price_change_percent.toFixed(1)}%)
+                                                ({alert.price_change_percent > 0 ? '+' : ''}{alert.price_change_percent}%)
                                               </span>
                                             </div>
                                             {alert.competitor_name && (
@@ -1089,99 +1207,139 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
                                   {related?.competitorData && related.competitorData.length > 0 ? (
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                      {related.competitorData.map((competitor, index) => (
-                                        <div key={`competitor-${competitor.id}-${index}`} className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
-                                          <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                              <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                                                C{index + 1}
-                                              </div>
-                                              <div>
-                                                <h4 className="font-semibold text-gray-900">Competitor {index + 1}</h4>
-                                                <p className="text-sm text-gray-600">{competitor.Product_Identifiers_MarketplaceASIN_ASIN || `ID: ${competitor.id}`}</p>
-                                              </div>
-                                            </div>
-                                            <div>
-                                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${competitor.status === 'Active'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                {competitor.status || 'N/A'}
-                                              </span>
-                                              <button
-                                                onClick={() => window.open(`https://amazon.ae/dp/${competitor.Product_Identifiers_MarketplaceASIN_ASIN}`, '_blank')}
-                                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="View on Amazon"
-                                              >
-                                                <ExternalLink className="w-4 h-4" />
-                                              </button>
-                                            </div>
-                                          </div>
+                                      {related.competitorData.map((competitor, index) => {
+                                        const competitorRatingList = competitorRatings[competitor.Product_Identifiers_MarketplaceASIN_ASIN] || [];
 
-                                          <div className="space-y-3">
-                                            {competitor.competitive_prices && competitor.competitive_prices.length > 0 && (
-                                              <div>
-                                                <h5 className="text-sm font-medium text-gray-700 mb-2">Pricing</h5>
-                                                <div className="bg-white rounded-lg p-3 space-y-2">
-                                                  {competitor.competitive_prices.slice(0, 3).map((price, priceIndex) => (
-                                                    <div key={`price-${price.id}-${priceIndex}`} className="flex justify-between items-center py-1">
-                                                      <span className="text-sm text-gray-600">
-                                                        {price.condition || 'N/A'}
-                                                      </span>
-                                                      <span className="font-semibold text-green-600">
-                                                        {formatCurrency(price.price_amount, price.price_currency)}
-                                                      </span>
-                                                    </div>
-                                                  ))}
-                                                  {competitor.competitive_prices.length > 3 && (
-                                                    <div className="text-xs text-gray-500 text-center pt-1">
-                                                      +{competitor.competitive_prices.length - 3} more prices
-                                                    </div>
-                                                  )}
+                                        return (
+                                          <div key={`competitor-${competitor.id}-${index}`} className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
+                                            <div className="flex items-center justify-between mb-4">
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                                                  C{index + 1}
+                                                </div>
+                                                <div>
+                                                  <h4 className="font-semibold text-gray-900">Competitor {index + 1}</h4>
+                                                  <p className="text-sm text-gray-600">{competitor.Product_Identifiers_MarketplaceASIN_ASIN || `ID: ${competitor.id}`}</p>
                                                 </div>
                                               </div>
-                                            )}
-
-                                            {competitor.sales_rankings && competitor.sales_rankings.length > 0 && (
                                               <div>
-                                                <h5 className="text-sm font-medium text-gray-700 mb-2">Sales Ranking</h5>
-                                                <div className="bg-white rounded-lg p-3">
-                                                  <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-gray-600">Best Rank</span>
-                                                    <span className="font-semibold text-purple-600">
-                                                      #{formatBigInt(
-                                                        competitor.sales_rankings.reduce(
-                                                          (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
-                                                          competitor.sales_rankings[0].rank
-                                                        )
-                                                      )}
-                                                    </span>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${competitor.status === 'Active'
+                                                  ? 'bg-green-100 text-green-800'
+                                                  : 'bg-gray-100 text-gray-800'
+                                                  }`}>
+                                                  {competitor.status || 'N/A'}
+                                                </span>
+                                                <button
+                                                  onClick={() => window.open(`https://amazon.ae/dp/${competitor.Product_Identifiers_MarketplaceASIN_ASIN}`, '_blank')}
+                                                  className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                                  title="View on Amazon"
+                                                >
+                                                  <ExternalLink className="w-4 h-4" />
+                                                </button>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              {/* NEW: Competitor Ratings Section */}
+                                              {competitorRatingList.length > 0 ? (
+                                                <div>
+                                                  <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                                    <Star className="w-4 h-4 text-yellow-500" />
+                                                    Competitor Ratings
+                                                  </h5>
+                                                  <div className="bg-white rounded-lg p-3 space-y-2">
+                                                    {competitorRatingList.map((rating, ratingIndex) => (
+                                                      <div key={`comp-rating-${ratingIndex}`} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
+                                                        <div className="flex flex-col">
+                                                          <span className="text-sm text-gray-600">
+                                                            {rating.competitor_name || `Competitor ${ratingIndex + 1}`}
+                                                          </span>
+                                                          <span className="text-xs text-gray-400">
+                                                            {formatDate(rating.created_at)}
+                                                          </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                          {[...Array(5)].map((_, i) => (
+                                                            <Star
+                                                              key={i}
+                                                              size={14}
+                                                              className={i < Math.round(rating.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+                                                            />
+                                                          ))}
+                                                          <span className="text-sm font-medium text-gray-700 ml-1">
+                                                            {rating.rating ? rating.rating.toFixed(1) : 'N/A'}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    ))}
                                                   </div>
-                                                  {competitor.sales_rankings[0]?.product_category_id && (
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                      Category:{' '}
-                                                      {
-                                                        competitor.sales_rankings
-                                                          .sort((a, b) => {
-                                                            if (!a.rank || !b.rank) return 0;
-                                                            return Number(a.rank) - Number(b.rank);
-                                                          })[0]?.product_category_id || 'N/A'
-                                                      }
-                                                    </div>
-                                                  )}
                                                 </div>
-                                              </div>
-                                            )}
+                                              ) : null}
 
-                                            <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-orange-200">
-                                              <div className="flex justify-between">
-                                                <span>ASIN: {competitor.Product_Identifiers_MarketplaceASIN_ASIN || 'N/A'}</span>
-                                                <span>Updated: {formatDate(competitor.updated_at)}</span>
+                                              {competitor.competitive_prices && competitor.competitive_prices.length > 0 && (
+                                                <div>
+                                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Pricing</h5>
+                                                  <div className="bg-white rounded-lg p-3 space-y-2">
+                                                    {competitor.competitive_prices.slice(0, 3).map((price, priceIndex) => (
+                                                      <div key={`price-${price.id}-${priceIndex}`} className="flex justify-between items-center py-1">
+                                                        <span className="text-sm text-gray-600">
+                                                          {price.condition || 'N/A'}
+                                                        </span>
+                                                        <span className="font-semibold text-green-600">
+                                                          {formatCurrency(price.price_amount, price.price_currency)}
+                                                        </span>
+                                                      </div>
+                                                    ))}
+                                                    {competitor.competitive_prices.length > 3 && (
+                                                      <div className="text-xs text-gray-500 text-center pt-1">
+                                                        +{competitor.competitive_prices.length - 3} more prices
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              {competitor.sales_rankings && competitor.sales_rankings.length > 0 && (
+                                                <div>
+                                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Sales Ranking</h5>
+                                                  <div className="bg-white rounded-lg p-3">
+                                                    <div className="flex justify-between items-center">
+                                                      <span className="text-sm text-gray-600">Best Rank</span>
+                                                      <span className="font-semibold text-purple-600">
+                                                        #{formatBigInt(
+                                                          competitor.sales_rankings.reduce(
+                                                            (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                                                            competitor.sales_rankings[0].rank
+                                                          )
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                    {competitor.sales_rankings[0]?.product_category_id && (
+                                                      <div className="text-xs text-gray-500 mt-1">
+                                                        Category:{' '}
+                                                        {
+                                                          competitor.sales_rankings
+                                                            .sort((a, b) => {
+                                                              if (!a.rank || !b.rank) return 0;
+                                                              return Number(a.rank) - Number(b.rank);
+                                                            })[0]?.product_category_id || 'N/A'
+                                                        }
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-orange-200">
+                                                <div className="flex justify-between">
+                                                  <span>ASIN: {competitor.Product_Identifiers_MarketplaceASIN_ASIN || 'N/A'}</span>
+                                                  <span>Updated: {formatDate(competitor.updated_at)}</span>
+                                                </div>
                                               </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   ) : (
                                     <div className="text-center py-8 text-gray-500">

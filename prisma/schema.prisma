@@ -13,8 +13,8 @@ model users {
   otp_code   String?   @db.VarChar(6)
   otp_expiry DateTime? @db.Timestamp(6)
   role       role_enum @default(USER)
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @default(now()) @updatedAt @db.Timestamp(6)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamp(6)
   password   String?   @db.VarChar(255)
 }
 
@@ -23,6 +23,657 @@ model reports {
   name      String   @unique
   url       String
   createdAt DateTime @default(now()) @db.Timestamp(6)
+}
+
+model AMZN_PRODUCT_LIST {
+  listing_id                String                         @map("listing-id")
+  item_name                 String                         @map("item-name")
+  item_description          String?                        @map("item-description")
+  seller_sku                String                         @map("seller-sku")
+  price                     Float
+  quantity                  Float?
+  open_date                 DateTime?                      @map("open-date") @db.Timestamp(6)
+  image_url                 String?                        @map("image-url")
+  item_is_marketplace       String?                        @map("item-is-marketplace")
+  product_id                String                         @id @map("product-id")
+  product_id_type           Int?                           @map("product-id-type")
+  asin1                     String                         @unique
+  asin2                     String?
+  asin3                     String?
+  item_condition            Int?                           @map("item-condition")
+  zshop_category1           String?                        @map("zshop-category1")
+  zshop_browse_path         String?                        @map("zshop-browse-path")
+  zshop_storefront_feature  String?                        @map("zshop-storefront-feature")
+  will_ship_internationally String?                        @map("will-ship-internationally")
+  expedited_shipping        String?                        @map("expedited-shipping")
+  fulfillment_channel       String?                        @map("fulfillment-channel")
+  status                    String
+  created_at                DateTime                       @default(now()) @db.Timestamp(6)
+  updated_at                DateTime                       @default(now()) @updatedAt @db.Timestamp(6)
+  competitive_pricing       AMZN_competitive_pricing_main?
+  ratings                   amazon_ratings?
+
+  @@index([asin1], map: "idx_product_list_asin")
+  @@index([seller_sku], map: "idx_product_list_seller_sku")
+  @@index([status], map: "idx_product_list_status")
+}
+
+model amazon_ratings {
+  asin         String            @unique @db.VarChar(20)
+  created_at   DateTime          @default(now()) @db.Timestamp(6)
+  id           Int               @id @default(autoincrement())
+  rating       Float?          
+  product      AMZN_PRODUCT_LIST @relation(fields: [asin], references: [asin1])
+
+  @@index([asin], map: "idx_ratings_asin")
+  @@index([rating], map: "idx_ratings_rating")
+}
+
+model competitor_ratings {
+  id                          BigInt                                    @id @default(autoincrement())
+  asin                        String                                    @db.VarChar(20)
+  rating                      Float?                                  
+  competitor_name             String?                                   @db.VarChar(255)
+  created_at                  DateTime                                  @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime                                  @default(now()) @updatedAt @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main_competitors @relation(fields: [asin], references: [Product_Identifiers_MarketplaceASIN_ASIN], onDelete: Cascade)
+
+  @@unique([asin])
+  @@index([asin], map: "idx_competitor_ratings_asin")
+  @@index([rating], map: "idx_competitor_ratings_rating")
+  @@index([created_at], map: "idx_competitor_ratings_created_at")
+}
+
+model AMZN_competitive_pricing_main {
+  id                                                BigInt                    @id @default(autoincrement())
+  SellerSKU                                         String?
+  status                                            String?
+  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                   @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
+  Product_Identifiers_SKUIdentifier_SellerId        String?                   @map("Product.Identifiers.SKUIdentifier.SellerId")
+  Product_Identifiers_SKUIdentifier_SellerSKU       String?                   @map("Product.Identifiers.SKUIdentifier.SellerSKU")
+  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                   @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
+  Product_Identifiers_MarketplaceASIN_ASIN          String                    @unique @map("Product.Identifiers.MarketplaceASIN.ASIN")
+  created_at                                        DateTime                  @default(now()) @db.Timestamp(6)
+  competitive_prices                                AMZN_competitive_prices[]
+  product                                           AMZN_PRODUCT_LIST         @relation(fields: [Product_Identifiers_MarketplaceASIN_ASIN], references: [asin1])
+  offer_listings                                    AMZN_offer_listings[]
+  sales_rankings                                    AMZN_sales_rankings[]
+
+  @@index([SellerSKU], map: "idx_competitive_pricing_seller_sku")
+  @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_asin")
+  @@index([created_at], map: "idx_competitive_pricing_created_at")
+}
+
+model AMZN_sales_rankings {
+  id                          BigInt                        @id @default(autoincrement())
+  competitive_pricing_main_id BigInt
+  seller_sku                  String?
+  product_category_id         String?
+  rank                        Int?
+  created_at                  DateTime                      @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_sales_rankings_main_id")
+  @@index([product_category_id], map: "idx_sales_rankings_category")
+  @@index([rank], map: "idx_sales_rankings_rank")
+  @@index([seller_sku], map: "idx_sales_rankings_seller_sku")
+}
+
+model AMZN_offer_listings {
+  id                          BigInt                        @id @default(autoincrement())
+  competitive_pricing_main_id BigInt
+  seller_sku                  String?
+  condition                   String?
+  count                       Int?
+  created_at                  DateTime                      @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_offer_listings_main_id")
+  @@index([condition], map: "idx_offer_listings_condition")
+  @@index([seller_sku], map: "idx_offer_listings_seller_sku")
+}
+
+model AMZN_competitive_prices {
+  id                          BigInt                        @id @default(autoincrement())
+  competitive_pricing_main_id BigInt
+  seller_sku                  String?
+  belongs_to_requester        Boolean?
+  condition                   String?
+  fulfillment_channel         String?
+  offer_type                  String?
+  price_amount                Float?                      
+  price_currency              String?                       @db.VarChar(10)
+  shipping_amount             Float?                      
+  shipping_currency           String?                       @db.VarChar(10)
+  subcategory                 String?
+  created_at                  DateTime                      @default(now()) @db.Timestamp(6)
+  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_competitive_prices_main_id")
+  @@index([condition], map: "idx_competitive_prices_condition")
+  @@index([fulfillment_channel], map: "idx_competitive_prices_fulfillment")
+  @@index([seller_sku], map: "idx_competitive_prices_seller_sku")
+  @@index([price_amount], map: "idx_competitive_prices_amount")
+}
+
+model AMZN_competitive_pricing_main_competitors {
+  id                                                BigInt                                @id @default(autoincrement())
+  SellerSKU                                         String?
+  status                                            String?
+  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                               @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
+  Product_Identifiers_SKUIdentifier_SellerId        String?                               @map("Product.Identifiers.SKUIdentifier.SellerId")
+  Product_Identifiers_SKUIdentifier_SellerSKU       String?                               @map("Product.Identifiers.SKUIdentifier.SellerSKU")
+  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                               @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
+  Product_Identifiers_MarketplaceASIN_ASIN          String?                               @unique @map("Product.Identifiers.MarketplaceASIN.ASIN")
+  created_at                                        DateTime                              @default(now()) @db.Timestamp(6)
+  competitive_prices                                AMZN_competitive_prices_competitors[]
+  offer_listings                                    AMZN_offer_listings_competitors[]
+  sales_rankings                                    AMZN_sales_rankings_competitors[]
+  ratings                                           competitor_ratings[]
+
+  @@index([SellerSKU], map: "idx_competitive_pricing_competitors_seller_sku")
+  @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_competitors_asin")
+  @@index([created_at], map: "idx_competitive_pricing_competitors_created_at")
+}
+
+model AMZN_sales_rankings_competitors {
+  id                                   BigInt                                    @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt
+  seller_sku                           String?
+  product_category_id                  String?
+  rank                                 Int?
+  created_at                           DateTime                                  @default(now()) @db.Timestamp(6)
+  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_sales_rankings_competitors_main_id")
+  @@index([product_category_id], map: "idx_sales_rankings_competitors_category")
+  @@index([rank], map: "idx_sales_rankings_competitors_rank")
+  @@index([seller_sku], map: "idx_sales_rankings_competitors_seller_sku")
+}
+
+model AMZN_offer_listings_competitors {
+  id                                   BigInt                                    @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt
+  seller_sku                           String?
+  condition                            String?
+  count                                Int?
+  created_at                           DateTime                                  @default(now()) @db.Timestamp(6)
+  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_offer_listings_competitors_main_id")
+  @@index([condition], map: "idx_offer_listings_competitors_condition")
+  @@index([seller_sku], map: "idx_offer_listings_competitors_seller_sku")
+}
+
+model AMZN_competitive_prices_competitors {
+  id                                   BigInt                                    @id @default(autoincrement())
+  competitive_pricing_main_id          BigInt
+  seller_sku                           String?
+  belongs_to_requester                 Boolean?
+  condition                            String?
+  fulfillment_channel                  String?
+  offer_type                           String?
+  price_amount                         Float?                                  
+  price_currency                       String?                                   @db.VarChar(10)
+  shipping_amount                      Float?                                  
+  shipping_currency                    String?                                   @db.VarChar(10)
+  subcategory                          String?
+  created_at                           DateTime                                  @default(now()) @db.Timestamp(6)
+  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
+
+  @@index([competitive_pricing_main_id], map: "idx_competitive_prices_competitors_main_id")
+  @@index([condition], map: "idx_competitive_prices_competitors_condition")
+  @@index([fulfillment_channel], map: "idx_competitive_prices_competitors_fulfillment")
+  @@index([seller_sku], map: "idx_competitive_prices_competitors_seller_sku")
+  @@index([price_amount], map: "idx_competitive_prices_competitors_amount")
+}
+
+model competitive_historical_prices {
+  id                  BigInt   @id @default(autoincrement())
+  asin                String   @db.VarChar(20)
+  seller_sku          String?  @db.VarChar(100)
+  price               Float? 
+  currency            String?  @db.VarChar(10)
+  price_type          String?  @db.VarChar(50)
+  condition           String?  @db.VarChar(50)
+  fulfillment_channel String?  @db.VarChar(50)
+  recorded_at         DateTime @default(now()) @db.Timestamptz(6)
+  data_source         String?  @db.VarChar(100)
+  notified            Boolean  @default(false)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([asin], map: "idx_historical_prices_asin")
+  @@index([recorded_at], map: "idx_historical_prices_recorded_at")
+  @@index([notified], map: "idx_historical_prices_notified")
+  @@index([seller_sku], map: "idx_historical_prices_seller_sku")
+}
+
+model price_change_alerts {
+  id                   BigInt    @id @default(autoincrement())
+  asin                 String    @db.VarChar(20)
+  seller_sku           String?   @db.VarChar(100)
+  product_name         String?   @db.VarChar(500)
+  old_price            Float   
+  new_price            Float   
+  price_change         Float   
+  price_change_percent Float   
+  currency             String    @db.VarChar(10)
+  alert_type           String    @db.VarChar(50)
+  threshold_triggered  Float?  
+  competitor_name      String?   @db.VarChar(255)
+  is_read              Boolean   @default(false)
+  is_dismissed         Boolean   @default(false)
+  priority             String    @default("medium") @db.VarChar(20)
+  created_at           DateTime  @default(now()) @db.Timestamptz(6)
+  read_at              DateTime? @db.Timestamptz(6)
+  dismissed_at         DateTime? @db.Timestamptz(6)
+
+  @@index([asin], map: "idx_alerts_asin")
+  @@index([is_read], map: "idx_alerts_is_read")
+  @@index([is_dismissed], map: "idx_alerts_is_dismissed")
+  @@index([created_at], map: "idx_alerts_created_at")
+  @@index([priority], map: "idx_alerts_priority")
+  @@index([alert_type], map: "idx_alerts_type")
+}
+
+model competitor_comparison_history {
+  competitor_mapping_id       BigInt
+  our_price                   Float?
+  our_currency                String?  @db.VarChar(10)
+  competitor_price            Float?
+  competitor_currency         String?  @db.VarChar(10)
+  price_difference            Float?
+  price_difference_percentage Float?
+  comparison_date             DateTime @default(now()) @db.Timestamptz(6)
+  data_source                 String?  @db.VarChar(100)
+  competitor_category_rank    BigInt?
+  competitor_sales_rank       BigInt?
+  competitor_stock_status     String?  @db.VarChar(50)
+  id                          BigInt   @id @default(autoincrement())
+  our_category_rank           BigInt?
+  our_sales_rank              BigInt?
+  our_stock_status            String?  @db.VarChar(50)
+
+  @@index([comparison_date], map: "idx_comparison_history_date")
+  @@index([competitor_mapping_id], map: "idx_comparison_history_mapping_id")
+}
+
+model competitor_product_mappings {
+  id                        BigInt    @id @default(autoincrement())
+  our_seller_sku            String    @db.VarChar(100)
+  our_asin                  String?   @db.VarChar(20)
+  our_product_name          String?   @db.VarChar(500)
+  our_marketplace_id        String?   @db.VarChar(20)
+  competitor_asin           String    @db.VarChar(20)
+  competitor_seller_id      String?   @db.VarChar(100)
+  competitor_seller_name    String?   @db.VarChar(255)
+  competitor_product_name   String?   @db.VarChar(500)
+  competitor_marketplace_id String?   @db.VarChar(20)
+  mapping_reason            String?   @db.VarChar(255)
+  mapping_notes             String?
+  mapping_priority          Int       @default(1)
+  is_active                 Boolean   @default(true)
+  created_by_user_id        Int?
+  verified_by_user_id       Int?
+  last_price_check          DateTime? @db.Timestamptz(6)
+  last_ranking_check        DateTime? @db.Timestamptz(6)
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  verified_at               DateTime? @db.Timestamptz(6)
+
+  @@unique([our_seller_sku, competitor_asin])
+  @@index([is_active], map: "idx_competitor_mappings_active")
+  @@index([competitor_asin], map: "idx_competitor_mappings_competitor_asin")
+  @@index([created_at], map: "idx_competitor_mappings_created_at")
+  @@index([our_asin], map: "idx_competitor_mappings_our_asin")
+  @@index([our_seller_sku], map: "idx_competitor_mappings_our_sku")
+  @@index([mapping_priority], map: "idx_competitor_mappings_priority")
+}
+
+model products {
+  id                   Int                  @id @default(autoincrement())
+  sku                  String               @unique @db.VarChar(100)
+  asin                 String?              @db.VarChar(50)
+  mainCategory         String?              @db.VarChar(100)
+  subCategory          String?              @db.VarChar(100)
+  productTitle         String               @db.VarChar(255)
+  costPrice            Float?             
+  salePrice            Float?             
+  dealPrice            Float?             
+  color                String?              @db.VarChar(50)
+  productLength        Int?
+  productWidth         Int?
+  productHeight        Int?
+  productDimensionUnit String?              @db.VarChar(10)
+  packageLength        Int?
+  packageWidth         Int?
+  packageHeight        Int?
+  packageDimensionUnit String?              @db.VarChar(10)
+  packageWeight        Float?             
+  weightUnit           String?              @db.VarChar(20)
+  productImage         String?
+  productLaunchDate    DateTime?            @db.Date
+  supplierUrl          String?
+  salePerson           String?              @db.VarChar(100)
+  createdAt            DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime             @default(now()) @updatedAt @db.Timestamp(6)
+  orders_by_products   orders_by_products[]
+
+  @@index([sku], map: "idx_products_sku")
+  @@index([asin], map: "idx_products_asin")
+}
+
+model order_mappings {
+  id                       BigInt    @id @default(autoincrement())
+  custom_sku               String    @unique @db.VarChar(100)
+  cn_order_id              BigInt?
+  cn_product_id            BigInt?
+  cn_sku_id                BigInt?
+  cn_product_name          String?
+  cn_product_image_url     String?
+  cn_price                 Float?  
+  cn_quantity              Int?
+  cn_seller_id             String?   @db.VarChar(100)
+  cn_buyer_id              String?   @db.VarChar(100)
+  cn_status                String?   @db.VarChar(50)
+  cn_create_time           DateTime? @db.Timestamptz(6)
+  amzn_order_id            String?   @db.VarChar(100)
+  amzn_order_item_id       BigInt?
+  amzn_sku                 String?   @db.VarChar(100)
+  amzn_asin                String?   @db.VarChar(20)
+  amzn_product_name        String?
+  amzn_quantity            Int?
+  amzn_item_price          Float?  
+  amzn_currency            String?   @db.VarChar(10)
+  amzn_order_status        String?   @db.VarChar(50)
+  amzn_purchase_date       DateTime? @db.Timestamptz(6)
+  amzn_fulfillment_channel String?   @db.VarChar(50)
+  mapping_confidence       Float   @default(0.00) 
+  mapping_method           String?   @db.VarChar(50)
+  mapped_by_user_id        Int?
+  mapping_notes            String?
+  is_verified              Boolean   @default(false)
+  unified_product_name     String?   @db.VarChar(255)
+  unified_category         String?   @db.VarChar(100)
+  unified_image_url        String?
+  price_margin             Float?  
+  profit_percentage        Float?  
+  created_at               DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  verified_at              DateTime? @db.Timestamptz(6)
+
+  @@index([amzn_asin], map: "idx_order_mappings_amzn_asin")
+  @@index([amzn_order_id], map: "idx_order_mappings_amzn_order_id")
+  @@index([cn_order_id], map: "idx_order_mappings_cn_order_id")
+  @@index([cn_product_id], map: "idx_order_mappings_cn_product_id")
+  @@index([created_at], map: "idx_order_mappings_created_at")
+  @@index([custom_sku], map: "idx_order_mappings_custom_sku")
+  @@index([is_verified], map: "idx_order_mappings_is_verified")
+  @@index([mapping_confidence], map: "idx_order_mappings_mapping_confidence")
+}
+
+model product_list_en {
+  productID          BigInt               @id
+  name               String
+  price              Float
+  productImgUrl      String
+  productSnapshotUrl String
+  unit               String
+  orders_by_products orders_by_products[]
+
+  @@map("1688_product_list_en")
+}
+
+model orders_by_products {
+  id                                             BigInt           @id @default(autoincrement())
+  orderRateInfo_sellerRateStatus                 BigInt?          @map("orderRateInfo.sellerRateStatus")
+  orderRateInfo_buyerRateStatus                  BigInt?          @map("orderRateInfo.buyerRateStatus")
+  tradeTerms_phase                               String?          @map("tradeTerms.phase")
+  tradeTerms_payWayDesc                          String?          @map("tradeTerms.payWayDesc")
+  tradeTerms_expressPay                          Boolean?         @map("tradeTerms.expressPay")
+  tradeTerms_payTime                             String?          @map("tradeTerms.payTime")
+  tradeTerms_payStatusDesc                       String?          @map("tradeTerms.payStatusDesc")
+  tradeTerms_payWay                              String?          @map("tradeTerms.payWay")
+  tradeTerms_cardPay                             Boolean?         @map("tradeTerms.cardPay")
+  tradeTerms_payStatus                           String?          @map("tradeTerms.payStatus")
+  tradeTerms_phasAmount                          Float?           @map("tradeTerms.phasAmount")
+  nativeLogistics_zip                            String?          @map("nativeLogistics.zip")
+  nativeLogistics_area                           String?          @map("nativeLogistics.area")
+  nativeLogistics_address                        String?          @map("nativeLogistics.address")
+  nativeLogistics_town                           String?          @map("nativeLogistics.town")
+  nativeLogistics_city                           String?          @map("nativeLogistics.city")
+  nativeLogistics_townCode                       String?          @map("nativeLogistics.townCode")
+  nativeLogistics_contactPerson                  String?          @map("nativeLogistics.contactPerson")
+  nativeLogistics_areaCode                       String?          @map("nativeLogistics.areaCode")
+  nativeLogistics_province                       String?          @map("nativeLogistics.province")
+  nativeLogistics_privacyProtection              Boolean?         @map("nativeLogistics.privacyProtection")
+  baseInfo_businessType                          String?          @map("baseInfo.businessType")
+  baseInfo_buyerID                               String?          @map("baseInfo.buyerID")
+  baseInfo_createTime                            DateTime?        @map("baseInfo.createTime") @db.Timestamp(6)
+  baseInfo_id                                    Float          @map("baseInfo.id") 
+  baseInfo_modifyTime                            DateTime?        @map("baseInfo.modifyTime") @db.Timestamp(6)
+  baseInfo_payTime                               DateTime?        @map("baseInfo.payTime") @db.Timestamp(6)
+  baseInfo_refund                                Float?         @map("baseInfo.refund") 
+  baseInfo_sellerID                              String?          @map("baseInfo.sellerID")
+  baseInfo_shippingFee                           Float?           @map("baseInfo.shippingFee")
+  baseInfo_status                                String?          @map("baseInfo.status")
+  baseInfo_totalAmount                           Float?           @map("baseInfo.totalAmount")
+  baseInfo_discount                              Float?         @map("baseInfo.discount") 
+  baseInfo_buyerContact_phone                    String?          @map("baseInfo.buyerContact.phone")
+  baseInfo_buyerContact_email                    String?          @map("baseInfo.buyerContact.email")
+  baseInfo_buyerContact_imInPlatform             String?          @map("baseInfo.buyerContact.imInPlatform")
+  baseInfo_buyerContact_name                     String?          @map("baseInfo.buyerContact.name")
+  baseInfo_buyerContact_companyName              String?          @map("baseInfo.buyerContact.companyName")
+  baseInfo_sellerContact_phone                   String?          @map("baseInfo.sellerContact.phone")
+  baseInfo_sellerContact_imInPlatform            String?          @map("baseInfo.sellerContact.imInPlatform")
+  baseInfo_sellerContact_name                    String?          @map("baseInfo.sellerContact.name")
+  baseInfo_sellerContact_mobile                  String?          @map("baseInfo.sellerContact.mobile")
+  baseInfo_sellerContact_companyName             String?          @map("baseInfo.sellerContact.companyName")
+  baseInfo_sellerContact_email                   String?          @map("baseInfo.sellerContact.email")
+  baseInfo_tradeType                             String?          @map("baseInfo.tradeType")
+  baseInfo_refundPayment                         BigInt?          @map("baseInfo.refundPayment")
+  baseInfo_idOfStr                               String?          @map("baseInfo.idOfStr")
+  baseInfo_alipayTradeId                         String?          @map("baseInfo.alipayTradeId")
+  baseInfo_receiverInfo_toDivisionCode           String?          @map("baseInfo.receiverInfo.toDivisionCode")
+  baseInfo_receiverInfo_toTownCode               String?          @map("baseInfo.receiverInfo.toTownCode")
+  baseInfo_receiverInfo_toFullName               String?          @map("baseInfo.receiverInfo.toFullName")
+  baseInfo_receiverInfo_toArea                   String?          @map("baseInfo.receiverInfo.toArea")
+  baseInfo_receiverInfo_toPost                   String?          @map("baseInfo.receiverInfo.toPost")
+  baseInfo_buyerLoginId                          String?          @map("baseInfo.buyerLoginId")
+  baseInfo_sellerLoginId                         String?          @map("baseInfo.sellerLoginId")
+  baseInfo_buyerUserId                           Float?         @map("baseInfo.buyerUserId") 
+  baseInfo_sellerUserId                          Float?         @map("baseInfo.sellerUserId") 
+  baseInfo_buyerAlipayId                         String?          @map("baseInfo.buyerAlipayId")
+  baseInfo_sellerAlipayId                        String?          @map("baseInfo.sellerAlipayId")
+  baseInfo_sumProductPayment                     Float?           @map("baseInfo.sumProductPayment")
+  baseInfo_stepPayAll                            Boolean?         @map("baseInfo.stepPayAll")
+  baseInfo_overSeaOrder                          Boolean?         @map("baseInfo.overSeaOrder")
+  baseInfo_allDeliveredTime                      DateTime?        @map("baseInfo.allDeliveredTime") @db.Timestamp(6)
+  baseInfo_completeTime                          DateTime?        @map("baseInfo.completeTime") @db.Timestamp(6)
+  baseInfo_closeReason                           String?          @map("baseInfo.closeReason")
+  baseInfo_remark                                String?          @map("baseInfo.remark")
+  baseInfo_buyerFeedback                         String?          @map("baseInfo.buyerFeedback")
+  orderBizInfo_odsCyd                            Boolean?         @map("orderBizInfo.odsCyd")
+  orderBizInfo_creditOrder                       Boolean?         @map("orderBizInfo.creditOrder")
+  orderBizInfo_creditOrderDetail_payAmount       Float?           @map("orderBizInfo.creditOrderDetail.payAmount")
+  orderBizInfo_creditOrderDetail_createTime      String?          @map("orderBizInfo.creditOrderDetail.createTime")
+  orderBizInfo_creditOrderDetail_status          String?          @map("orderBizInfo.creditOrderDetail.status")
+  orderBizInfo_creditOrderDetail_statusStr       String?          @map("orderBizInfo.creditOrderDetail.statusStr")
+  orderBizInfo_creditOrderDetail_restRepayAmount Float?           @map("orderBizInfo.creditOrderDetail.restRepayAmount")
+  orderBizInfo_dropshipping                      Boolean?         @map("orderBizInfo.dropshipping")
+  orderBizInfo_shippingInsurance                 String?          @map("orderBizInfo.shippingInsurance")
+  orderBizInfo_fz                                Boolean?         @map("orderBizInfo.fz")
+  orderBizInfo_tgOfficialPickUp                  Boolean?         @map("orderBizInfo.tgOfficialPickUp")
+  productItems_itemAmount                        Float?           @map("productItems.itemAmount")
+  productItems_name                              String?          @map("productItems.name")
+  productItems_price                             Float?           @map("productItems.price")
+  productItems_productID                         BigInt?          @map("productItems.productID")
+  productItems_productImgUrl                     String?          @map("productItems.productImgUrl")
+  productItems_productSnapshotUrl                String?          @map("productItems.productSnapshotUrl")
+  productItems_quantity                          BigInt?          @map("productItems.quantity")
+  productItems_refund                            BigInt?          @map("productItems.refund")
+  productItems_skuID                             BigInt?          @map("productItems.skuID")
+  productItems_status                            String?          @map("productItems.status")
+  productItems_subItemID                         BigInt?          @map("productItems.subItemID")
+  productItems_type                              String?          @map("productItems.type")
+  productItems_unit                              String?          @map("productItems.unit")
+  productItems_guaranteesTerms                   String?          @map("productItems.guaranteesTerms")
+  productItems_productCargoNumber                String?          @map("productItems.productCargoNumber")
+  productItems_skuInfos                          String?          @map("productItems.skuInfos")
+  productItems_entryDiscount                     BigInt?          @map("productItems.entryDiscount")
+  productItems_specId                            String?          @map("productItems.specId")
+  productItems_quantityFactor                    BigInt?          @map("productItems.quantityFactor")
+  productItems_statusStr                         String?          @map("productItems.statusStr")
+  productItems_sharePostage                      Float?           @map("productItems.sharePostage")
+  productItems_cargoNumber                       String?          @map("productItems.cargoNumber")
+  approved_                                      Boolean?         @map("approved?")
+  products_id                                    Int?
+  created_at                                     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at                                     DateTime?        @default(now()) @updatedAt @db.Timestamptz(6)
+  product_list_en                                product_list_en? @relation(fields: [productItems_productID], references: [productID])
+  products                                       products?        @relation(fields: [products_id], references: [id])
+
+  @@index([baseInfo_id], map: "idx_orders_by_products_order_id")
+  @@index([productItems_productID], map: "idx_orders_by_products_product_id")
+  @@index([products_id], map: "idx_orders_by_products_products_table_id")
+  @@index([baseInfo_sellerID], map: "idx_orders_by_products_seller_id")
+  @@index([baseInfo_buyerID], map: "idx_orders_by_products_buyer_id")
+  @@index([baseInfo_createTime], map: "idx_orders_by_products_create_time")
+  @@index([productItems_status], map: "idx_orders_by_products_product_status")
+  @@index([baseInfo_status], map: "idx_orders_by_products_order_status")
+  @@index([approved_], map: "idx_orders_by_products_is_approved")
+  @@index([productItems_name], map: "idx_orders_by_products_product_name")
+  @@index([baseInfo_payTime], map: "idx_orders_by_products_pay_time")
+  @@map("1688_orders_by_products")
+}
+
+model warehouses {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique @db.VarChar(50)
+  name            String        @db.VarChar(255)
+  location        String
+  capacity        Int
+  available_space Int
+  status          String        @default("active") @db.VarChar(20)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @updatedAt @db.Timestamptz(6)
+  racks           racks[]
+  stock_items     stock_items[]
+
+  @@index([code], map: "idx_warehouses_code")
+  @@index([status], map: "idx_warehouses_status")
+}
+
+model racks {
+  id              Int           @id @default(autoincrement())
+  warehouse_id    Int
+  code            String        @db.VarChar(50)
+  level           Int
+  capacity        Int
+  available_space Int
+  status          String        @default("active") @db.VarChar(20)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @updatedAt @db.Timestamptz(6)
+  warehouse       warehouses    @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
+  stock_items     stock_items[]
+
+  @@unique([warehouse_id, code])
+  @@index([warehouse_id], map: "idx_racks_warehouse_id")
+  @@index([status], map: "idx_racks_status")
+}
+
+model stock_items {
+  id                 Int               @id @default(autoincrement())
+  sku                String            @unique @db.VarChar(100)
+  product_id         Int?
+  warehouse_id       Int?
+  rack_id            Int?
+  quantity           Int               @default(0)
+  reserved_quantity  Int               @default(0)
+  available_quantity Int               @default(0)
+  reorder_level      Int               @default(10)
+  last_counted_at    DateTime?         @db.Timestamptz(6)
+  status             String            @default("in_stock") @db.VarChar(20)
+  created_at         DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime          @updatedAt @db.Timestamptz(6)
+  rack               racks?            @relation(fields: [rack_id], references: [id])
+  warehouse          warehouses?       @relation(fields: [warehouse_id], references: [id])
+  movements          stock_movements[]
+  transit_items      transit_items[]
+
+  @@index([sku], map: "idx_stock_items_sku")
+  @@index([warehouse_id], map: "idx_stock_items_warehouse_id")
+  @@index([rack_id], map: "idx_stock_items_rack_id")
+  @@index([status], map: "idx_stock_items_status")
+  @@index([product_id], map: "idx_stock_items_product_id")
+}
+
+model stock_movements {
+  id            Int         @id @default(autoincrement())
+  stock_item_id Int
+  movement_type String      @db.VarChar(50)
+  quantity      Int
+  reason        String?
+  reference_id  String?     @db.VarChar(100)
+  notes         String?
+  created_by    Int?
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  stock_item    stock_items @relation(fields: [stock_item_id], references: [id], onDelete: Cascade)
+
+  @@index([stock_item_id], map: "idx_stock_movements_stock_item_id")
+  @@index([movement_type], map: "idx_stock_movements_movement_type")
+  @@index([created_at], map: "idx_stock_movements_created_at")
+}
+
+model transits {
+  id                Int             @id @default(autoincrement())
+  reference_no      String          @unique @db.VarChar(100)
+  from_warehouse_id Int?
+  to_warehouse_id   Int?
+  status            String          @default("pending") @db.VarChar(20)
+  shipped_date      DateTime?       @db.Timestamptz(6)
+  expected_delivery DateTime?       @db.Timestamptz(6)
+  received_date     DateTime?       @db.Timestamptz(6)
+  notes             String?
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @updatedAt @db.Timestamptz(6)
+  items             transit_items[]
+
+  @@index([status], map: "idx_transits_status")
+  @@index([shipped_date], map: "idx_transits_shipped_date")
+  @@index([reference_no], map: "idx_transits_reference_no")
+}
+
+model transit_items {
+  id                Int         @id @default(autoincrement())
+  transit_id        Int
+  stock_item_id     Int
+  quantity          Int
+  received_quantity Int         @default(0)
+  status            String      @default("pending") @db.VarChar(20)
+  created_at        DateTime    @default(now()) @db.Timestamptz(6)
+  stock_item        stock_items @relation(fields: [stock_item_id], references: [id])
+  transit           transits    @relation(fields: [transit_id], references: [id], onDelete: Cascade)
+
+  @@index([transit_id], map: "idx_transit_items_transit_id")
+  @@index([stock_item_id], map: "idx_transit_items_stock_item_id")
+}
+
+model bulk_uploads {
+  id            Int      @id @default(autoincrement())
+  upload_type   String   @db.VarChar(50)
+  file_name     String   @db.VarChar(255)
+  total_records Int
+  success_count Int
+  error_count   Int
+  status        String   @db.VarChar(20)
+  error_details String?
+  uploaded_by   Int?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([upload_type], map: "idx_bulk_uploads_upload_type")
+  @@index([created_at], map: "idx_bulk_uploads_created_at")
+  @@index([status], map: "idx_bulk_uploads_status")
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -237,6 +888,92 @@ model orders_en {
   approved_                                      Boolean?  @map("approved?")
 
   @@map("1688_orders_en")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model order_list_en {
+  orderRateInfo_sellerRateStatus                 BigInt?   @map("orderRateInfo.sellerRateStatus")
+  orderRateInfo_buyerRateStatus                  BigInt?   @map("orderRateInfo.buyerRateStatus")
+  tradeTerms_phase                               String?   @map("tradeTerms.phase")
+  tradeTerms_payWayDesc                          String?   @map("tradeTerms.payWayDesc")
+  tradeTerms_expressPay                          Boolean?  @map("tradeTerms.expressPay")
+  tradeTerms_payTime                             String?   @map("tradeTerms.payTime")
+  tradeTerms_payStatusDesc                       String?   @map("tradeTerms.payStatusDesc")
+  tradeTerms_payWay                              String?   @map("tradeTerms.payWay")
+  tradeTerms_cardPay                             Boolean?  @map("tradeTerms.cardPay")
+  tradeTerms_payStatus                           String?   @map("tradeTerms.payStatus")
+  tradeTerms_phasAmount                          Float?    @map("tradeTerms.phasAmount")
+  nativeLogistics_zip                            String?   @map("nativeLogistics.zip")
+  nativeLogistics_area                           String?   @map("nativeLogistics.area")
+  nativeLogistics_address                        String?   @map("nativeLogistics.address")
+  nativeLogistics_town                           String?   @map("nativeLogistics.town")
+  nativeLogistics_city                           String?   @map("nativeLogistics.city")
+  nativeLogistics_townCode                       String?   @map("nativeLogistics.townCode")
+  nativeLogistics_contactPerson                  String?   @map("nativeLogistics.contactPerson")
+  nativeLogistics_areaCode                       String?   @map("nativeLogistics.areaCode")
+  nativeLogistics_province                       String?   @map("nativeLogistics.province")
+  nativeLogistics_privacyProtection              Boolean?  @map("nativeLogistics.privacyProtection")
+  baseInfo_businessType                          String?   @map("baseInfo.businessType")
+  baseInfo_buyerID                               String?   @map("baseInfo.buyerID")
+  baseInfo_createTime                            DateTime? @map("baseInfo.createTime") @db.Timestamp(6)
+  baseInfo_id                                    BigInt?   @map("baseInfo.id")
+  baseInfo_modifyTime                            DateTime? @map("baseInfo.modifyTime") @db.Timestamp(6)
+  baseInfo_payTime                               DateTime? @map("baseInfo.payTime") @db.Timestamp(6)
+  baseInfo_refund                                BigInt?   @map("baseInfo.refund")
+  baseInfo_sellerID                              String?   @map("baseInfo.sellerID")
+  baseInfo_shippingFee                           Float?    @map("baseInfo.shippingFee")
+  baseInfo_status                                String?   @map("baseInfo.status")
+  baseInfo_totalAmount                           Float?    @map("baseInfo.totalAmount")
+  baseInfo_discount                              BigInt?   @map("baseInfo.discount")
+  baseInfo_buyerContact_phone                    String?   @map("baseInfo.buyerContact.phone")
+  baseInfo_buyerContact_email                    String?   @map("baseInfo.buyerContact.email")
+  baseInfo_buyerContact_imInPlatform             String?   @map("baseInfo.buyerContact.imInPlatform")
+  baseInfo_buyerContact_name                     String?   @map("baseInfo.buyerContact.name")
+  baseInfo_buyerContact_companyName              String?   @map("baseInfo.buyerContact.companyName")
+  baseInfo_sellerContact_phone                   String?   @map("baseInfo.sellerContact.phone")
+  baseInfo_sellerContact_imInPlatform            String?   @map("baseInfo.sellerContact.imInPlatform")
+  baseInfo_sellerContact_name                    String?   @map("baseInfo.sellerContact.name")
+  baseInfo_sellerContact_mobile                  String?   @map("baseInfo.sellerContact.mobile")
+  baseInfo_sellerContact_companyName             String?   @map("baseInfo.sellerContact.companyName")
+  baseInfo_sellerContact_email                   String?   @map("baseInfo.sellerContact.email")
+  baseInfo_tradeType                             String?   @map("baseInfo.tradeType")
+  baseInfo_refundPayment                         BigInt?   @map("baseInfo.refundPayment")
+  baseInfo_idOfStr                               String?   @map("baseInfo.idOfStr")
+  baseInfo_alipayTradeId                         String?   @map("baseInfo.alipayTradeId")
+  baseInfo_receiverInfo_toDivisionCode           String?   @map("baseInfo.receiverInfo.toDivisionCode")
+  baseInfo_receiverInfo_toTownCode               String?   @map("baseInfo.receiverInfo.toTownCode")
+  baseInfo_receiverInfo_toFullName               String?   @map("baseInfo.receiverInfo.toFullName")
+  baseInfo_receiverInfo_toArea                   String?   @map("baseInfo.receiverInfo.toArea")
+  baseInfo_receiverInfo_toPost                   String?   @map("baseInfo.receiverInfo.toPost")
+  baseInfo_buyerLoginId                          String?   @map("baseInfo.buyerLoginId")
+  baseInfo_sellerLoginId                         String?   @map("baseInfo.sellerLoginId")
+  baseInfo_buyerUserId                           BigInt?   @map("baseInfo.buyerUserId")
+  baseInfo_sellerUserId                          BigInt?   @map("baseInfo.sellerUserId")
+  baseInfo_buyerAlipayId                         String?   @map("baseInfo.buyerAlipayId")
+  baseInfo_sellerAlipayId                        String?   @map("baseInfo.sellerAlipayId")
+  baseInfo_sumProductPayment                     Float?    @map("baseInfo.sumProductPayment")
+  baseInfo_stepPayAll                            Boolean?  @map("baseInfo.stepPayAll")
+  baseInfo_overSeaOrder                          Boolean?  @map("baseInfo.overSeaOrder")
+  baseInfo_allDeliveredTime                      DateTime? @map("baseInfo.allDeliveredTime") @db.Timestamp(6)
+  baseInfo_completeTime                          DateTime? @map("baseInfo.completeTime") @db.Timestamp(6)
+  baseInfo_closeReason                           String?   @map("baseInfo.closeReason")
+  baseInfo_remark                                String?   @map("baseInfo.remark")
+  baseInfo_buyerFeedback                         String?   @map("baseInfo.buyerFeedback")
+  orderBizInfo_odsCyd                            Boolean?  @map("orderBizInfo.odsCyd")
+  orderBizInfo_creditOrder                       Boolean?  @map("orderBizInfo.creditOrder")
+  orderBizInfo_creditOrderDetail_payAmount       Float?    @map("orderBizInfo.creditOrderDetail.payAmount")
+  orderBizInfo_creditOrderDetail_createTime      String?   @map("orderBizInfo.creditOrderDetail.createTime")
+  orderBizInfo_creditOrderDetail_status          String?   @map("orderBizInfo.creditOrderDetail.status")
+  orderBizInfo_creditOrderDetail_statusStr       String?   @map("orderBizInfo.creditOrderDetail.statusStr")
+  orderBizInfo_creditOrderDetail_restRepayAmount Float?    @map("orderBizInfo.creditOrderDetail.restRepayAmount")
+  orderBizInfo_dropshipping                      Boolean?  @map("orderBizInfo.dropshipping")
+  orderBizInfo_shippingInsurance                 String?   @map("orderBizInfo.shippingInsurance")
+  orderBizInfo_fz                                Boolean?  @map("orderBizInfo.fz")
+  orderBizInfo_tgOfficialPickUp                  Boolean?  @map("orderBizInfo.tgOfficialPickUp")
+  approved_                                      Boolean?  @map("approved?")
+
+  @@map("1688_order_list_en")
   @@ignore
 }
 
@@ -705,718 +1442,7 @@ model AMZN_BRAND_ANALYTICS_MARKET_BASKET_REPORT {
   @@ignore
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model order_mappings {
-  id                       BigInt    @id @default(autoincrement())
-  custom_sku               String    @unique @db.VarChar(100)
-  cn_order_id              BigInt?
-  cn_product_id            BigInt?
-  cn_sku_id                BigInt?
-  cn_product_name          String?
-  cn_product_image_url     String?
-  cn_price                 Float?
-  cn_quantity              BigInt?
-  cn_seller_id             String?   @db.VarChar(100)
-  cn_buyer_id              String?   @db.VarChar(100)
-  cn_status                String?   @db.VarChar(50)
-  cn_create_time           DateTime? @db.Timestamptz(6)
-  amzn_order_id            String?   @db.VarChar(100)
-  amzn_order_item_id       BigInt?
-  amzn_sku                 String?   @db.VarChar(100)
-  amzn_asin                String?   @db.VarChar(20)
-  amzn_product_name        String?
-  amzn_quantity            BigInt?
-  amzn_item_price          Float?
-  amzn_currency            String?   @db.VarChar(10)
-  amzn_order_status        String?   @db.VarChar(50)
-  amzn_purchase_date       DateTime? @db.Timestamptz(6)
-  amzn_fulfillment_channel String?   @db.VarChar(50)
-  mapping_confidence       Float?    @default(0.00)
-  mapping_method           String?   @db.VarChar(50)
-  mapped_by_user_id        BigInt?
-  mapping_notes            String?
-  is_verified              Boolean?  @default(false)
-  unified_product_name     String?   @db.VarChar(255)
-  unified_category         String?   @db.VarChar(100)
-  unified_image_url        String?
-  price_margin             Float?
-  profit_percentage        Float?
-  created_at               DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime? @default(now()) @db.Timestamptz(6)
-  verified_at              DateTime? @db.Timestamptz(6)
-
-  @@index([amzn_asin], map: "idx_order_mappings_amzn_asin")
-  @@index([amzn_order_id], map: "idx_order_mappings_amzn_order_id")
-  @@index([cn_order_id], map: "idx_order_mappings_cn_order_id")
-  @@index([cn_product_id], map: "idx_order_mappings_cn_product_id")
-  @@index([created_at], map: "idx_order_mappings_created_at")
-  @@index([custom_sku], map: "idx_order_mappings_custom_sku")
-  @@index([is_verified], map: "idx_order_mappings_is_verified")
-  @@index([mapping_confidence], map: "idx_order_mappings_mapping_confidence")
-}
-
-model AMZN_PRODUCT_LIST {
-  listing_id                String    @map("listing-id")
-  item_name                 String    @map("item-name")
-  item_description          String?   @map("item-description")
-  seller_sku                String    @map("seller-sku")
-  price                     Float
-  quantity                  Float?
-  open_date                 DateTime? @map("open-date") @db.Timestamp(6)
-  image_url                 Float?    @map("image-url")
-  item_is_marketplace       String?   @map("item-is-marketplace")
-  product_id                String    @id @map("product-id")
-  product_id_type           BigInt?   @map("product-id-type")
-  asin1                     String
-  asin2                     Float?
-  asin3                     Float?
-  item_condition            BigInt?   @map("item-condition")
-  zshop_category1           Float?    @map("zshop-category1")
-  zshop_browse_path         Float?    @map("zshop-browse-path")
-  zshop_storefront_feature  Float?    @map("zshop-storefront-feature")
-  will_ship_internationally Float?    @map("will-ship-internationally")
-  expedited_shipping        Float?    @map("expedited-shipping")
-  fulfillment_channel       String?   @map("fulfillment-channel")
-  status                    String
-}
-
-model orders_by_products {
-  id                                             BigInt           @id @default(autoincrement())
-  orderRateInfo_sellerRateStatus                 BigInt?          @map("orderRateInfo.sellerRateStatus")
-  orderRateInfo_buyerRateStatus                  BigInt?          @map("orderRateInfo.buyerRateStatus")
-  tradeTerms_phase                               String?          @map("tradeTerms.phase")
-  tradeTerms_payWayDesc                          String?          @map("tradeTerms.payWayDesc")
-  tradeTerms_expressPay                          Boolean?         @map("tradeTerms.expressPay")
-  tradeTerms_payTime                             String?          @map("tradeTerms.payTime")
-  tradeTerms_payStatusDesc                       String?          @map("tradeTerms.payStatusDesc")
-  tradeTerms_payWay                              String?          @map("tradeTerms.payWay")
-  tradeTerms_cardPay                             Boolean?         @map("tradeTerms.cardPay")
-  tradeTerms_payStatus                           String?          @map("tradeTerms.payStatus")
-  tradeTerms_phasAmount                          Float?           @map("tradeTerms.phasAmount")
-  nativeLogistics_zip                            String?          @map("nativeLogistics.zip")
-  nativeLogistics_area                           String?          @map("nativeLogistics.area")
-  nativeLogistics_address                        String?          @map("nativeLogistics.address")
-  nativeLogistics_town                           String?          @map("nativeLogistics.town")
-  nativeLogistics_city                           String?          @map("nativeLogistics.city")
-  nativeLogistics_townCode                       String?          @map("nativeLogistics.townCode")
-  nativeLogistics_contactPerson                  String?          @map("nativeLogistics.contactPerson")
-  nativeLogistics_areaCode                       String?          @map("nativeLogistics.areaCode")
-  nativeLogistics_province                       String?          @map("nativeLogistics.province")
-  nativeLogistics_privacyProtection              Boolean?         @map("nativeLogistics.privacyProtection")
-  baseInfo_businessType                          String?          @map("baseInfo.businessType")
-  baseInfo_buyerID                               String?          @map("baseInfo.buyerID")
-  baseInfo_createTime                            DateTime?        @map("baseInfo.createTime") @db.Timestamp(6)
-  baseInfo_id                                    Decimal          @map("baseInfo.id") @db.Decimal
-  baseInfo_modifyTime                            DateTime?        @map("baseInfo.modifyTime") @db.Timestamp(6)
-  baseInfo_payTime                               DateTime?        @map("baseInfo.payTime") @db.Timestamp(6)
-  baseInfo_refund                                Decimal?         @map("baseInfo.refund") @db.Decimal
-  baseInfo_sellerID                              String?          @map("baseInfo.sellerID")
-  baseInfo_shippingFee                           Float?           @map("baseInfo.shippingFee")
-  baseInfo_status                                String?          @map("baseInfo.status")
-  baseInfo_totalAmount                           Float?           @map("baseInfo.totalAmount")
-  baseInfo_discount                              Decimal?         @map("baseInfo.discount") @db.Decimal
-  baseInfo_buyerContact_phone                    String?          @map("baseInfo.buyerContact.phone")
-  baseInfo_buyerContact_email                    String?          @map("baseInfo.buyerContact.email")
-  baseInfo_buyerContact_imInPlatform             String?          @map("baseInfo.buyerContact.imInPlatform")
-  baseInfo_buyerContact_name                     String?          @map("baseInfo.buyerContact.name")
-  baseInfo_buyerContact_companyName              String?          @map("baseInfo.buyerContact.companyName")
-  baseInfo_sellerContact_phone                   String?          @map("baseInfo.sellerContact.phone")
-  baseInfo_sellerContact_imInPlatform            String?          @map("baseInfo.sellerContact.imInPlatform")
-  baseInfo_sellerContact_name                    String?          @map("baseInfo.sellerContact.name")
-  baseInfo_sellerContact_mobile                  String?          @map("baseInfo.sellerContact.mobile")
-  baseInfo_sellerContact_companyName             String?          @map("baseInfo.sellerContact.companyName")
-  baseInfo_sellerContact_email                   String?          @map("baseInfo.sellerContact.email")
-  baseInfo_tradeType                             String?          @map("baseInfo.tradeType")
-  baseInfo_refundPayment                         BigInt?          @map("baseInfo.refundPayment")
-  baseInfo_idOfStr                               String?          @map("baseInfo.idOfStr")
-  baseInfo_alipayTradeId                         String?          @map("baseInfo.alipayTradeId")
-  baseInfo_receiverInfo_toDivisionCode           String?          @map("baseInfo.receiverInfo.toDivisionCode")
-  baseInfo_receiverInfo_toTownCode               String?          @map("baseInfo.receiverInfo.toTownCode")
-  baseInfo_receiverInfo_toFullName               String?          @map("baseInfo.receiverInfo.toFullName")
-  baseInfo_receiverInfo_toArea                   String?          @map("baseInfo.receiverInfo.toArea")
-  baseInfo_receiverInfo_toPost                   String?          @map("baseInfo.receiverInfo.toPost")
-  baseInfo_buyerLoginId                          String?          @map("baseInfo.buyerLoginId")
-  baseInfo_sellerLoginId                         String?          @map("baseInfo.sellerLoginId")
-  baseInfo_buyerUserId                           Decimal?         @map("baseInfo.buyerUserId") @db.Decimal
-  baseInfo_sellerUserId                          Decimal?         @map("baseInfo.sellerUserId") @db.Decimal
-  baseInfo_buyerAlipayId                         String?          @map("baseInfo.buyerAlipayId")
-  baseInfo_sellerAlipayId                        String?          @map("baseInfo.sellerAlipayId")
-  baseInfo_sumProductPayment                     Float?           @map("baseInfo.sumProductPayment")
-  baseInfo_stepPayAll                            Boolean?         @map("baseInfo.stepPayAll")
-  baseInfo_overSeaOrder                          Boolean?         @map("baseInfo.overSeaOrder")
-  baseInfo_allDeliveredTime                      DateTime?        @map("baseInfo.allDeliveredTime") @db.Timestamp(6)
-  baseInfo_completeTime                          DateTime?        @map("baseInfo.completeTime") @db.Timestamp(6)
-  baseInfo_closeReason                           String?          @map("baseInfo.closeReason")
-  baseInfo_remark                                String?          @map("baseInfo.remark")
-  baseInfo_buyerFeedback                         String?          @map("baseInfo.buyerFeedback")
-  orderBizInfo_odsCyd                            Boolean?         @map("orderBizInfo.odsCyd")
-  orderBizInfo_creditOrder                       Boolean?         @map("orderBizInfo.creditOrder")
-  orderBizInfo_creditOrderDetail_payAmount       Float?           @map("orderBizInfo.creditOrderDetail.payAmount")
-  orderBizInfo_creditOrderDetail_createTime      String?          @map("orderBizInfo.creditOrderDetail.createTime")
-  orderBizInfo_creditOrderDetail_status          String?          @map("orderBizInfo.creditOrderDetail.status")
-  orderBizInfo_creditOrderDetail_statusStr       String?          @map("orderBizInfo.creditOrderDetail.statusStr")
-  orderBizInfo_creditOrderDetail_restRepayAmount Float?           @map("orderBizInfo.creditOrderDetail.restRepayAmount")
-  orderBizInfo_dropshipping                      Boolean?         @map("orderBizInfo.dropshipping")
-  orderBizInfo_shippingInsurance                 String?          @map("orderBizInfo.shippingInsurance")
-  orderBizInfo_fz                                Boolean?         @map("orderBizInfo.fz")
-  orderBizInfo_tgOfficialPickUp                  Boolean?         @map("orderBizInfo.tgOfficialPickUp")
-  productItems_itemAmount                        Float?           @map("productItems.itemAmount")
-  productItems_name                              String?          @map("productItems.name")
-  productItems_price                             Float?           @map("productItems.price")
-  productItems_productID                         BigInt?          @map("productItems.productID")
-  productItems_productImgUrl                     String?          @map("productItems.productImgUrl")
-  productItems_productSnapshotUrl                String?          @map("productItems.productSnapshotUrl")
-  productItems_quantity                          BigInt?          @map("productItems.quantity")
-  productItems_refund                            BigInt?          @map("productItems.refund")
-  productItems_skuID                             BigInt?          @map("productItems.skuID")
-  productItems_status                            String?          @map("productItems.status")
-  productItems_subItemID                         BigInt?          @map("productItems.subItemID")
-  productItems_type                              String?          @map("productItems.type")
-  productItems_unit                              String?          @map("productItems.unit")
-  productItems_guaranteesTerms                   String?          @map("productItems.guaranteesTerms")
-  productItems_productCargoNumber                String?          @map("productItems.productCargoNumber")
-  productItems_skuInfos                          String?          @map("productItems.skuInfos")
-  productItems_entryDiscount                     BigInt?          @map("productItems.entryDiscount")
-  productItems_specId                            String?          @map("productItems.specId")
-  productItems_quantityFactor                    BigInt?          @map("productItems.quantityFactor")
-  productItems_statusStr                         String?          @map("productItems.statusStr")
-  productItems_sharePostage                      Float?           @map("productItems.sharePostage")
-  productItems_cargoNumber                       String?          @map("productItems.cargoNumber")
-  approved_                                      Boolean?         @map("approved?")
-  products_id                                    Int?
-  created_at                                     DateTime?        @default(now()) @db.Timestamptz(6)
-  updated_at                                     DateTime?        @default(now()) @updatedAt @db.Timestamptz(6)
-  product_list_en                                product_list_en? @relation(fields: [productItems_productID], references: [productID])
-  products                                       products?        @relation(fields: [products_id], references: [id])
-
-  @@index([baseInfo_id], map: "idx_orders_by_products_order_id")
-  @@index([productItems_productID], map: "idx_orders_by_products_product_id")
-  @@index([products_id], map: "idx_orders_by_products_products_table_id")
-  @@index([baseInfo_sellerID], map: "idx_orders_by_products_seller_id")
-  @@index([baseInfo_buyerID], map: "idx_orders_by_products_buyer_id")
-  @@index([baseInfo_createTime], map: "idx_orders_by_products_create_time")
-  @@index([productItems_status], map: "idx_orders_by_products_product_status")
-  @@index([baseInfo_status], map: "idx_orders_by_products_order_status")
-  @@index([approved_], map: "idx_orders_by_products_is_approved")
-  @@index([productItems_name], map: "idx_orders_by_products_product_name")
-  @@index([baseInfo_payTime], map: "idx_orders_by_products_pay_time")
-  @@map("1688_orders_by_products")
-}
-
-model product_list_en {
-  productID          BigInt               @id
-  name               String
-  price              Float
-  productImgUrl      String
-  productSnapshotUrl String
-  unit               String
-  orders_by_products orders_by_products[]
-
-  @@map("1688_product_list_en")
-}
-
-model products {
-  id                   Int                  @id @default(autoincrement())
-  sku                  String               @db.VarChar(100)
-  asin                 String?              @db.VarChar(50)
-  mainCategory         String?              @db.VarChar(100)
-  subCategory          String?              @db.VarChar(100)
-  productTitle         String               @db.VarChar(255)
-  costPrice            Int?
-  salePrice            Int?
-  dealPrice            Int?
-  color                String?              @db.VarChar(50)
-  productLength        Int?
-  productWidth         Int?
-  productHeight        Int?
-  productDimensionUnit String?              @db.VarChar(10)
-  packageLength        Int?
-  packageWidth         Int?
-  packageHeight        Int?
-  packageDimensionUnit String?              @db.VarChar(10)
-  packageWeight        Int?
-  weightUnit           String?              @db.VarChar(20)
-  productImage         String?
-  productLaunchDate    DateTime?            @db.Date
-  supplierUrl          String?
-  salePerson           String?              @db.VarChar(100)
-  createdAt            DateTime?            @default(now()) @db.Timestamp(6)
-  orders_by_products   orders_by_products[]
-}
-
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
-model order_list_en {
-  orderRateInfo_sellerRateStatus                 BigInt?   @map("orderRateInfo.sellerRateStatus")
-  orderRateInfo_buyerRateStatus                  BigInt?   @map("orderRateInfo.buyerRateStatus")
-  tradeTerms_phase                               String?   @map("tradeTerms.phase")
-  tradeTerms_payWayDesc                          String?   @map("tradeTerms.payWayDesc")
-  tradeTerms_expressPay                          Boolean?  @map("tradeTerms.expressPay")
-  tradeTerms_payTime                             String?   @map("tradeTerms.payTime")
-  tradeTerms_payStatusDesc                       String?   @map("tradeTerms.payStatusDesc")
-  tradeTerms_payWay                              String?   @map("tradeTerms.payWay")
-  tradeTerms_cardPay                             Boolean?  @map("tradeTerms.cardPay")
-  tradeTerms_payStatus                           String?   @map("tradeTerms.payStatus")
-  tradeTerms_phasAmount                          Float?    @map("tradeTerms.phasAmount")
-  nativeLogistics_zip                            String?   @map("nativeLogistics.zip")
-  nativeLogistics_area                           String?   @map("nativeLogistics.area")
-  nativeLogistics_address                        String?   @map("nativeLogistics.address")
-  nativeLogistics_town                           String?   @map("nativeLogistics.town")
-  nativeLogistics_city                           String?   @map("nativeLogistics.city")
-  nativeLogistics_townCode                       String?   @map("nativeLogistics.townCode")
-  nativeLogistics_contactPerson                  String?   @map("nativeLogistics.contactPerson")
-  nativeLogistics_areaCode                       String?   @map("nativeLogistics.areaCode")
-  nativeLogistics_province                       String?   @map("nativeLogistics.province")
-  nativeLogistics_privacyProtection              Boolean?  @map("nativeLogistics.privacyProtection")
-  baseInfo_businessType                          String?   @map("baseInfo.businessType")
-  baseInfo_buyerID                               String?   @map("baseInfo.buyerID")
-  baseInfo_createTime                            DateTime? @map("baseInfo.createTime") @db.Timestamp(6)
-  baseInfo_id                                    BigInt?   @map("baseInfo.id")
-  baseInfo_modifyTime                            DateTime? @map("baseInfo.modifyTime") @db.Timestamp(6)
-  baseInfo_payTime                               DateTime? @map("baseInfo.payTime") @db.Timestamp(6)
-  baseInfo_refund                                BigInt?   @map("baseInfo.refund")
-  baseInfo_sellerID                              String?   @map("baseInfo.sellerID")
-  baseInfo_shippingFee                           Float?    @map("baseInfo.shippingFee")
-  baseInfo_status                                String?   @map("baseInfo.status")
-  baseInfo_totalAmount                           Float?    @map("baseInfo.totalAmount")
-  baseInfo_discount                              BigInt?   @map("baseInfo.discount")
-  baseInfo_buyerContact_phone                    String?   @map("baseInfo.buyerContact.phone")
-  baseInfo_buyerContact_email                    String?   @map("baseInfo.buyerContact.email")
-  baseInfo_buyerContact_imInPlatform             String?   @map("baseInfo.buyerContact.imInPlatform")
-  baseInfo_buyerContact_name                     String?   @map("baseInfo.buyerContact.name")
-  baseInfo_buyerContact_companyName              String?   @map("baseInfo.buyerContact.companyName")
-  baseInfo_sellerContact_phone                   String?   @map("baseInfo.sellerContact.phone")
-  baseInfo_sellerContact_imInPlatform            String?   @map("baseInfo.sellerContact.imInPlatform")
-  baseInfo_sellerContact_name                    String?   @map("baseInfo.sellerContact.name")
-  baseInfo_sellerContact_mobile                  String?   @map("baseInfo.sellerContact.mobile")
-  baseInfo_sellerContact_companyName             String?   @map("baseInfo.sellerContact.companyName")
-  baseInfo_sellerContact_email                   String?   @map("baseInfo.sellerContact.email")
-  baseInfo_tradeType                             String?   @map("baseInfo.tradeType")
-  baseInfo_refundPayment                         BigInt?   @map("baseInfo.refundPayment")
-  baseInfo_idOfStr                               String?   @map("baseInfo.idOfStr")
-  baseInfo_alipayTradeId                         String?   @map("baseInfo.alipayTradeId")
-  baseInfo_receiverInfo_toDivisionCode           String?   @map("baseInfo.receiverInfo.toDivisionCode")
-  baseInfo_receiverInfo_toTownCode               String?   @map("baseInfo.receiverInfo.toTownCode")
-  baseInfo_receiverInfo_toFullName               String?   @map("baseInfo.receiverInfo.toFullName")
-  baseInfo_receiverInfo_toArea                   String?   @map("baseInfo.receiverInfo.toArea")
-  baseInfo_receiverInfo_toPost                   String?   @map("baseInfo.receiverInfo.toPost")
-  baseInfo_buyerLoginId                          String?   @map("baseInfo.buyerLoginId")
-  baseInfo_sellerLoginId                         String?   @map("baseInfo.sellerLoginId")
-  baseInfo_buyerUserId                           BigInt?   @map("baseInfo.buyerUserId")
-  baseInfo_sellerUserId                          BigInt?   @map("baseInfo.sellerUserId")
-  baseInfo_buyerAlipayId                         String?   @map("baseInfo.buyerAlipayId")
-  baseInfo_sellerAlipayId                        String?   @map("baseInfo.sellerAlipayId")
-  baseInfo_sumProductPayment                     Float?    @map("baseInfo.sumProductPayment")
-  baseInfo_stepPayAll                            Boolean?  @map("baseInfo.stepPayAll")
-  baseInfo_overSeaOrder                          Boolean?  @map("baseInfo.overSeaOrder")
-  baseInfo_allDeliveredTime                      DateTime? @map("baseInfo.allDeliveredTime") @db.Timestamp(6)
-  baseInfo_completeTime                          DateTime? @map("baseInfo.completeTime") @db.Timestamp(6)
-  baseInfo_closeReason                           String?   @map("baseInfo.closeReason")
-  baseInfo_remark                                String?   @map("baseInfo.remark")
-  baseInfo_buyerFeedback                         String?   @map("baseInfo.buyerFeedback")
-  orderBizInfo_odsCyd                            Boolean?  @map("orderBizInfo.odsCyd")
-  orderBizInfo_creditOrder                       Boolean?  @map("orderBizInfo.creditOrder")
-  orderBizInfo_creditOrderDetail_payAmount       Float?    @map("orderBizInfo.creditOrderDetail.payAmount")
-  orderBizInfo_creditOrderDetail_createTime      String?   @map("orderBizInfo.creditOrderDetail.createTime")
-  orderBizInfo_creditOrderDetail_status          String?   @map("orderBizInfo.creditOrderDetail.status")
-  orderBizInfo_creditOrderDetail_statusStr       String?   @map("orderBizInfo.creditOrderDetail.statusStr")
-  orderBizInfo_creditOrderDetail_restRepayAmount Float?    @map("orderBizInfo.creditOrderDetail.restRepayAmount")
-  orderBizInfo_dropshipping                      Boolean?  @map("orderBizInfo.dropshipping")
-  orderBizInfo_shippingInsurance                 String?   @map("orderBizInfo.shippingInsurance")
-  orderBizInfo_fz                                Boolean?  @map("orderBizInfo.fz")
-  orderBizInfo_tgOfficialPickUp                  Boolean?  @map("orderBizInfo.tgOfficialPickUp")
-  approved_                                      Boolean?  @map("approved?")
-
-  @@map("1688_order_list_en")
-  @@ignore
-}
-
-model AMZN_competitive_pricing_main {
-  id                                                BigInt                      @id @default(autoincrement())
-  SellerSKU                                         String?
-  status                                            String?
-  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                  @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
-  Product_Identifiers_SKUIdentifier_SellerId        String?                  @map("Product.Identifiers.SKUIdentifier.SellerId")
-  Product_Identifiers_SKUIdentifier_SellerSKU       String?                  @map("Product.Identifiers.SKUIdentifier.SellerSKU")
-  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                  @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
-  Product_Identifiers_MarketplaceASIN_ASIN          String?                  @map("Product.Identifiers.MarketplaceASIN.ASIN")
-  created_at                                        DateTime?                @default(now()) @db.Timestamp(6)
-  competitive_prices                                AMZN_competitive_prices[]
-  offer_listings                                    AMZN_offer_listings[]
-  sales_rankings                                    AMZN_sales_rankings[]
-
-  @@index([SellerSKU], map: "idx_competitive_pricing_seller_sku")
-  @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_asin")
-  @@index([created_at], map: "idx_competitive_pricing_created_at")
-}
-
-model AMZN_sales_rankings {
-  id                          BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id BigInt                           
-  seller_sku                  String?
-  product_category_id         String?
-  rank                        BigInt?
-  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
-  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_sales_rankings_main_id")
-  @@index([product_category_id], map: "idx_sales_rankings_category")
-  @@index([rank], map: "idx_sales_rankings_rank")
-  @@index([seller_sku], map: "idx_sales_rankings_seller_sku")
-}
-
-model AMZN_offer_listings {
-  id                          BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id BigInt                           
-  seller_sku                  String?
-  condition                   String?
-  count                       BigInt?
-  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
-  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_offer_listings_main_id")
-  @@index([condition], map: "idx_offer_listings_condition")
-  @@index([seller_sku], map: "idx_offer_listings_seller_sku")
-}
-
-model AMZN_competitive_prices {
-  id                          BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id BigInt                           
-  seller_sku                  String?
-  belongs_to_requester        Boolean?
-  condition                   String?
-  fulfillment_channel         String?
-  offer_type                  String?
-  price_amount                Float?
-  price_currency              String?
-  shipping_amount             Float?
-  shipping_currency           String?
-  subcategory                 String?
-  created_at                  DateTime?                     @default(now()) @db.Timestamp(6)
-  competitive_pricing_main    AMZN_competitive_pricing_main @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_competitive_prices_main_id")
-  @@index([condition], map: "idx_competitive_prices_condition")
-  @@index([fulfillment_channel], map: "idx_competitive_prices_fulfillment")
-  @@index([seller_sku], map: "idx_competitive_prices_seller_sku")
-  @@index([price_amount], map: "idx_competitive_prices_amount")
-}
-
-model AMZN_competitive_pricing_main_competitors {
-  id                                                BigInt                                   @id @default(autoincrement())
-  SellerSKU                                         String?
-  status                                            String?
-  Product_Identifiers_SKUIdentifier_MarketplaceId   String?                               @map("Product.Identifiers.SKUIdentifier.MarketplaceId")
-  Product_Identifiers_SKUIdentifier_SellerId        String?                               @map("Product.Identifiers.SKUIdentifier.SellerId")
-  Product_Identifiers_SKUIdentifier_SellerSKU       String?                               @map("Product.Identifiers.SKUIdentifier.SellerSKU")
-  Product_Identifiers_MarketplaceASIN_MarketplaceId String?                               @map("Product.Identifiers.MarketplaceASIN.MarketplaceId")
-  Product_Identifiers_MarketplaceASIN_ASIN          String?                               @map("Product.Identifiers.MarketplaceASIN.ASIN")
-  created_at                                        DateTime?                             @default(now()) @db.Timestamp(6)
-  competitive_prices                                AMZN_competitive_prices_competitors[]
-  offer_listings                                    AMZN_offer_listings_competitors[]
-  sales_rankings                                    AMZN_sales_rankings_competitors[]
-
-  @@index([SellerSKU], map: "idx_competitive_pricing_competitors_seller_sku")
-  @@index([Product_Identifiers_MarketplaceASIN_ASIN], map: "idx_competitive_pricing_competitors_asin")
-  @@index([created_at], map: "idx_competitive_pricing_competitors_created_at")
-}
-
-model AMZN_sales_rankings_competitors {
-  id                                   BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id          BigInt                           
-  seller_sku                           String?
-  product_category_id                  String?
-  rank                                 BigInt?
-  created_at                           DateTime?                                 @default(now()) @db.Timestamp(6)
-  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_sales_rankings_competitors_main_id")
-  @@index([product_category_id], map: "idx_sales_rankings_competitors_category")
-  @@index([rank], map: "idx_sales_rankings_competitors_rank")
-  @@index([seller_sku], map: "idx_sales_rankings_competitors_seller_sku")
-}
-
-model AMZN_offer_listings_competitors {
-  id                                   BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id          BigInt                           
-  seller_sku                           String?
-  condition                            String?
-  count                                BigInt?
-  created_at                           DateTime?                                 @default(now()) @db.Timestamp(6)
-  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_offer_listings_competitors_main_id")
-  @@index([condition], map: "idx_offer_listings_competitors_condition")
-  @@index([seller_sku], map: "idx_offer_listings_competitors_seller_sku")
-}
-
-model AMZN_competitive_prices_competitors {
-  id                                   BigInt                           @id @default(autoincrement())
-  competitive_pricing_main_id          BigInt                           
-  seller_sku                           String?
-  belongs_to_requester                 Boolean?
-  condition                            String?
-  fulfillment_channel                  String?
-  offer_type                           String?
-  price_amount                         Float?
-  price_currency                       String?
-  shipping_amount                      Float?
-  shipping_currency                    String?
-  subcategory                          String?
-  created_at                           DateTime?                                  @default(now()) @db.Timestamp(6)
-  competitive_pricing_main_competitors AMZN_competitive_pricing_main_competitors? @relation(fields: [competitive_pricing_main_id], references: [id], onDelete: Cascade)
-
-  @@index([competitive_pricing_main_id], map: "idx_competitive_prices_competitors_main_id")
-  @@index([condition], map: "idx_competitive_prices_competitors_condition")
-  @@index([fulfillment_channel], map: "idx_competitive_prices_competitors_fulfillment")
-  @@index([seller_sku], map: "idx_competitive_prices_competitors_seller_sku")
-  @@index([price_amount], map: "idx_competitive_prices_competitors_amount")
-}
-
-// Fixed model for competitive historical prices
-model competitive_historical_prices {
-  id           BigInt    @id @default(autoincrement())
-  asin         String    @db.VarChar(20)
-  seller_sku   String?   @db.VarChar(100)
-  price        Float?
-  currency     String?   @db.VarChar(10)
-  price_type   String?   @db.VarChar(50) // 'listing', 'buybox', 'competitor'
-  condition    String?   @db.VarChar(50)
-  fulfillment_channel String? @db.VarChar(50)
-  recorded_at  DateTime  @default(now()) @db.Timestamptz(6)
-  data_source  String?   @db.VarChar(100)
-  notified     Boolean   @default(false)
-  created_at   DateTime  @default(now()) @db.Timestamptz(6)
-
-  @@index([asin], map: "idx_historical_prices_asin")
-  @@index([recorded_at], map: "idx_historical_prices_recorded_at")
-  @@index([notified], map: "idx_historical_prices_notified")
-  @@index([seller_sku], map: "idx_historical_prices_seller_sku")
-}
-
-// Model for price change alerts
-model price_change_alerts {
-  id                    BigInt    @id @default(autoincrement())
-  asin                  String    @db.VarChar(20)
-  seller_sku            String?   @db.VarChar(100)
-  product_name          String?   @db.VarChar(500)
-  old_price             Float
-  new_price             Float
-  price_change          Float     // difference amount
-  price_change_percent  Float     // percentage change
-  currency              String    @db.VarChar(10)
-  alert_type            String    @db.VarChar(50) // 'price_increase', 'price_decrease', 'significant_change'
-  threshold_triggered   Float?    // the threshold that triggered this alert
-  competitor_name       String?   @db.VarChar(255)
-  is_read               Boolean   @default(false)
-  is_dismissed          Boolean   @default(false)
-  priority              String    @default("medium") @db.VarChar(20) // 'low', 'medium', 'high', 'critical'
-  created_at            DateTime  @default(now()) @db.Timestamptz(6)
-  read_at               DateTime? @db.Timestamptz(6)
-  dismissed_at          DateTime? @db.Timestamptz(6)
-
-  @@index([asin], map: "idx_alerts_asin")
-  @@index([is_read], map: "idx_alerts_is_read")
-  @@index([is_dismissed], map: "idx_alerts_is_dismissed")
-  @@index([created_at], map: "idx_alerts_created_at")
-  @@index([priority], map: "idx_alerts_priority")
-  @@index([alert_type], map: "idx_alerts_type")
-}
-
-model competitor_comparison_history {
-  competitor_mapping_id       BigInt
-  our_price                   Float?
-  our_currency                String?  @db.VarChar(10)
-  competitor_price            Float?
-  competitor_currency         String?  @db.VarChar(10)
-  price_difference            Float?
-  price_difference_percentage Float?
-  comparison_date             DateTime @default(now()) @db.Timestamptz(6)
-  data_source                 String?  @db.VarChar(100)
-  competitor_category_rank    BigInt?
-  competitor_sales_rank       BigInt?
-  competitor_stock_status     String?  @db.VarChar(50)
-  id                          BigInt   @id @default(autoincrement())
-  our_category_rank           BigInt?
-  our_sales_rank              BigInt?
-  our_stock_status            String?  @db.VarChar(50)
-
-  @@index([comparison_date], map: "idx_comparison_history_date")
-  @@index([competitor_mapping_id], map: "idx_comparison_history_mapping_id")
-}
-
-model competitor_product_mappings {
-  id                        BigInt    @id @default(autoincrement())
-  our_seller_sku            String    @db.VarChar(100)
-  our_asin                  String?   @db.VarChar(20)
-  our_product_name          String?   @db.VarChar(500)
-  our_marketplace_id        String?   @db.VarChar(20)
-  competitor_asin           String    @db.VarChar(20)
-  competitor_seller_id      String?   @db.VarChar(100)
-  competitor_seller_name    String?   @db.VarChar(255)
-  competitor_product_name   String?   @db.VarChar(500)
-  competitor_marketplace_id String?   @db.VarChar(20)
-  mapping_reason            String?   @db.VarChar(255)
-  mapping_notes             String?
-  mapping_priority          Int?      @default(1)
-  is_active                 Boolean   @default(true)
-  created_by_user_id        BigInt?
-  verified_by_user_id       BigInt?
-  last_price_check          DateTime? @db.Timestamptz(6)
-  last_ranking_check        DateTime? @db.Timestamptz(6)
-  created_at                DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
-  verified_at               DateTime? @db.Timestamptz(6)
-
-  @@unique([our_seller_sku, competitor_asin])
-  @@index([is_active], map: "idx_competitor_mappings_active")
-  @@index([competitor_asin], map: "idx_competitor_mappings_competitor_asin")
-  @@index([created_at], map: "idx_competitor_mappings_created_at")
-  @@index([our_asin], map: "idx_competitor_mappings_our_asin")
-  @@index([our_seller_sku], map: "idx_competitor_mappings_our_sku")
-  @@index([mapping_priority], map: "idx_competitor_mappings_priority")
-}
-
 enum role_enum {
   USER
   ADMIN
-}
-
-// Warehouse Management
-model warehouses {
-  id              Int      @id @default(autoincrement())
-  code            String   @unique @db.VarChar(50)
-  name            String   @db.VarChar(255)
-  location        String
-  capacity        Int
-  available_space Int
-  status          String   @default("active") @db.VarChar(20) // active, inactive, maintenance
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime @updatedAt @db.Timestamptz(6)
-  
-  racks           racks[]
-  stock_items     stock_items[]
-  
-  @@index([code])
-  @@index([status])
-}
-
-// Rack Management
-model racks {
-  id              Int      @id @default(autoincrement())
-  warehouse_id    Int
-  code            String   @db.VarChar(50)
-  level           Int // 1, 2, 3, etc
-  capacity        Int
-  available_space Int
-  status          String   @default("active") @db.VarChar(20) // active, inactive
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime @updatedAt @db.Timestamptz(6)
-  
-  warehouse       warehouses       @relation(fields: [warehouse_id], references: [id], onDelete: Cascade)
-  stock_items     stock_items[]
-  
-  @@unique([warehouse_id, code])
-  @@index([warehouse_id])
-  @@index([status])
-}
-
-// Stock Management
-model stock_items {
-  id                  Int      @id @default(autoincrement())
-  sku                 String   @unique @db.VarChar(100)
-  product_id          Int? // Reference to products table from existing schema
-  warehouse_id        Int?
-  rack_id             Int?
-  quantity            Int      @default(0)
-  reserved_quantity   Int      @default(0)
-  available_quantity  Int      @default(0)
-  reorder_level       Int      @default(10)
-  last_counted_at     DateTime?
-  status              String   @default("in_stock") @db.VarChar(20) // in_stock, low_stock, out_of_stock, discontinued
-  created_at          DateTime @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime @updatedAt @db.Timestamptz(6)
-  
-  warehouse           warehouses?       @relation(fields: [warehouse_id], references: [id])
-  rack                racks?            @relation(fields: [rack_id], references: [id])
-  movements           stock_movements[]
-  transit_items       transit_items[]
-  
-  @@index([sku])
-  @@index([warehouse_id])
-  @@index([rack_id])
-  @@index([status])
-}
-
-// Stock Movements (history)
-model stock_movements {
-  id              Int      @id @default(autoincrement())
-  stock_item_id   Int
-  movement_type   String   @db.VarChar(50) // inbound, outbound, adjustment, transit, received
-  quantity        Int
-  reason          String?
-  reference_id    String? // Order ID, Transit ID, etc
-  notes           String?
-  created_by      Int?
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  
-  stock_item      stock_items @relation(fields: [stock_item_id], references: [id], onDelete: Cascade)
-  
-  @@index([stock_item_id])
-  @@index([movement_type])
-  @@index([created_at])
-}
-
-// Transit Management
-model transits {
-  id              Int      @id @default(autoincrement())
-  reference_no    String   @unique @db.VarChar(100)
-  from_warehouse_id Int?
-  to_warehouse_id Int?
-  status          String   @default("pending") @db.VarChar(20) // pending, in_transit, received, cancelled
-  shipped_date    DateTime?
-  expected_delivery DateTime?
-  received_date   DateTime?
-  notes           String?
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime @updatedAt @db.Timestamptz(6)
-  
-  items           transit_items[]
-  
-  @@index([status])
-  @@index([shipped_date])
-  @@index([reference_no])
-}
-
-// Transit Items
-model transit_items {
-  id              Int      @id @default(autoincrement())
-  transit_id      Int
-  stock_item_id   Int
-  quantity        Int
-  received_quantity Int @default(0)
-  status          String   @default("pending") @db.VarChar(20) // pending, in_transit, received
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  
-  transit         transits    @relation(fields: [transit_id], references: [id], onDelete: Cascade)
-  stock_item      stock_items @relation(fields: [stock_item_id], references: [id])
-  
-  @@index([transit_id])
-  @@index([stock_item_id])
-}
-
-// Bulk Upload History
-model bulk_uploads {
-  id              Int      @id @default(autoincrement())
-  upload_type     String   @db.VarChar(50) // stock, warehouse, rack, transit
-  file_name       String
-  total_records   Int
-  success_count   Int
-  error_count     Int
-  status          String   @db.VarChar(20) // processing, completed, failed
-  error_details   String?
-  uploaded_by     Int?
-  created_at      DateTime @default(now()) @db.Timestamptz(6)
-  
-  @@index([upload_type])
-  @@index([created_at])
 }
