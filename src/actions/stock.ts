@@ -40,7 +40,6 @@ export async function createWarehouse(data: {
   capacity: number;
 }) {
   try {
-    // Check if code already exists
     const existing = await prisma.warehouses.findUnique({
       where: { code: data.code }
     });
@@ -87,7 +86,6 @@ export async function updateWarehouse(
 
 export async function deleteWarehouse(id: number) {
   try {
-    // Check if warehouse has stock items
     const stockCount = await prisma.stock_items.count({
       where: { warehouse_id: id }
     });
@@ -142,7 +140,6 @@ export async function createRack(data: {
   capacity: number;
 }) {
   try {
-    // Verify warehouse exists
     const warehouse = await prisma.warehouses.findUnique({
       where: { id: data.warehouse_id }
     });
@@ -151,7 +148,6 @@ export async function createRack(data: {
       throw new Error('Warehouse not found');
     }
 
-    // Check if rack code already exists in this warehouse
     const existing = await prisma.racks.findFirst({
       where: {
         warehouse_id: data.warehouse_id,
@@ -265,12 +261,11 @@ export async function getStockItemById(id: number) {
 export async function createStockItem(data: {
   sku: string;
   warehouse_id: number;
-  rack_id: number;
+  rack_id?: number;
   quantity: number;
   reorder_level?: number;
 }) {
   try {
-    // Check if SKU already exists
     const existing = await prisma.stock_items.findUnique({
       where: { sku: data.sku }
     });
@@ -283,7 +278,7 @@ export async function createStockItem(data: {
       data: {
         sku: data.sku,
         warehouse_id: data.warehouse_id,
-        rack_id: data.rack_id,
+        rack_id: data.rack_id || null,
         quantity: data.quantity,
         available_quantity: data.quantity,
         reorder_level: data.reorder_level || 10,
@@ -303,6 +298,7 @@ export async function updateStockItem(
     reserved_quantity: number;
     reorder_level: number;
     status: string;
+    rack_id: number | null;
   }>
 ) {
   try {
@@ -349,7 +345,6 @@ export async function updateStockQuantity(
       }
     });
 
-    // Create movement record
     await prisma.stock_movements.create({
       data: {
         stock_item_id: id,
@@ -471,7 +466,6 @@ export async function createTransit(data: {
   expected_delivery?: Date;
 }) {
   try {
-    // Check if reference number already exists
     const existing = await prisma.transits.findUnique({
       where: { reference_no: data.reference_no }
     });
@@ -496,14 +490,12 @@ export async function createTransit(data: {
       include: { items: true }
     });
 
-    // Create outbound movement for source warehouse
     for (const item of data.items) {
       const stockItem = await prisma.stock_items.findUnique({
         where: { id: item.stock_item_id }
       });
 
       if (stockItem) {
-        // Update stock item reserved quantity
         await prisma.stock_items.update({
           where: { id: item.stock_item_id },
           data: {
@@ -512,7 +504,6 @@ export async function createTransit(data: {
           }
         });
 
-        // Create movement record
         await prisma.stock_movements.create({
           data: {
             stock_item_id: item.stock_item_id,
@@ -566,7 +557,6 @@ export async function receiveTransit(transitId: number, receivedItems: Array<{ i
       const transitItem = transit.items.find(i => i.id === received.id);
       if (!transitItem) continue;
 
-      // Update stock in destination warehouse
       const stockItem = await prisma.stock_items.findUnique({
         where: { id: transitItem.stock_item_id }
       });
@@ -593,7 +583,6 @@ export async function receiveTransit(transitId: number, receivedItems: Array<{ i
         });
       }
 
-      // Update transit item
       await prisma.transit_items.update({
         where: { id: received.id },
         data: {
@@ -629,7 +618,6 @@ export async function cancelTransit(id: number) {
       throw new Error('Transit not found');
     }
 
-    // Release reserved quantities
     for (const item of transit.items) {
       const stockItem = await prisma.stock_items.findUnique({
         where: { id: item.stock_item_id }
@@ -667,7 +655,6 @@ export async function uploadStockBulk(file: File) {
     let errorCount = 0;
     const errors: string[] = [];
 
-    // Skip header and process rows
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -675,9 +662,9 @@ export async function uploadStockBulk(file: File) {
       try {
         const [sku, warehouse_id, rack_id, quantity, reorder_level] = line.split(',').map(s => s.trim());
 
-        if (!sku || !warehouse_id || !rack_id || !quantity) {
+        if (!sku || !warehouse_id || !quantity) {
           errorCount++;
-          errors.push(`Row ${i}: Missing required fields`);
+          errors.push(`Row ${i}: Missing required fields (SKU, warehouse_id, quantity required)`);
           continue;
         }
 
@@ -686,13 +673,13 @@ export async function uploadStockBulk(file: File) {
           update: {
             quantity: parseInt(quantity),
             warehouse_id: parseInt(warehouse_id),
-            rack_id: parseInt(rack_id),
+            rack_id: rack_id ? parseInt(rack_id) : null,
             reorder_level: reorder_level ? parseInt(reorder_level) : 10
           },
           create: {
             sku,
             warehouse_id: parseInt(warehouse_id),
-            rack_id: parseInt(rack_id),
+            rack_id: rack_id ? parseInt(rack_id) : null,
             quantity: parseInt(quantity),
             available_quantity: parseInt(quantity),
             reorder_level: reorder_level ? parseInt(reorder_level) : 10
@@ -706,7 +693,6 @@ export async function uploadStockBulk(file: File) {
       }
     }
 
-    // Log upload
     await prisma.bulk_uploads.create({
       data: {
         upload_type: 'stock',
@@ -731,7 +717,7 @@ export async function downloadStockTemplate() {
   const sampleData = [
     ['SKU-001', '1', '1', '100', '10'],
     ['SKU-002', '1', '2', '50', '5'],
-    ['SKU-003', '2', '3', '200', '20']
+    ['SKU-003', '2', '', '200', '20']
   ];
   
   const csv = [headers, ...sampleData]

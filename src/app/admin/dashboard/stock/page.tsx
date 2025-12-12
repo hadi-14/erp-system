@@ -110,10 +110,6 @@ export default function StockDashboard() {
       setError('Warehouse is required');
       return false;
     }
-    if (!formData.rack_id) {
-      setError('Rack is required');
-      return false;
-    }
     if (!formData.quantity || parseInt(formData.quantity) < 0) {
       setError('Quantity must be 0 or greater');
       return false;
@@ -130,7 +126,7 @@ export default function StockDashboard() {
       await createStockItem({
         sku: formData.sku.trim(),
         warehouse_id: parseInt(formData.warehouse_id),
-        rack_id: parseInt(formData.rack_id),
+        rack_id: formData.rack_id ? parseInt(formData.rack_id) : undefined,
         quantity: parseInt(formData.quantity),
         reorder_level: formData.reorder_level ? parseInt(formData.reorder_level) : 10
       });
@@ -369,7 +365,9 @@ export default function StockDashboard() {
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.sku}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.warehouse?.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.rack?.code}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {item.rack?.code ? item.rack.code : <span className="text-gray-400 italic">No rack assigned</span>}
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">{item.quantity}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{item.available_quantity}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{item.reorder_level}</td>
@@ -571,14 +569,14 @@ export default function StockDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rack *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Rack (Optional)</label>
                 <select
                   value={formData.rack_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, rack_id: e.target.value }))}
                   disabled={!formData.warehouse_id}
                   className="w-full px-4 py-2.5 border border-gray-300 text-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white disabled:bg-gray-100"
                 >
-                  <option value="">Select rack</option>
+                  <option value="">No specific rack</option>
                   {formData.warehouse_id && getRacksForWarehouse(parseInt(formData.warehouse_id)).map(r => (
                     <option key={r.id} value={r.id}>{r.code}</option>
                   ))}

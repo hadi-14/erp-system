@@ -1,0 +1,423 @@
+2025-08-19 22:19:23,856 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:19:23,857 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:19:27,866 - Device-192.168.0.100:40765 - apkutils is not installed, install it with 'pip install adbutils[apk]'
+2025-08-19 22:19:28,770 - Device-192.168.0.100:40765 - Success pushed, time used 0 seconds
+2025-08-19 22:19:32,528 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:19:32,528 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:19:32,529 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:19:37,531 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:19:43,182 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:19:43,461 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:19:43,462 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:19:43,462 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:19:51,463 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:19:57,415 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:19:58,094 - Device-192.168.0.100:40765 - ✅ Clicked: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:20:00,095 - Device-192.168.0.100:40765 - Attempt 1 to find and click Instagram share option
+2025-08-19 22:20:01,097 - Device-192.168.0.100:40765 - ✅ Clicked: android.widget.LinearLayout
+2025-08-19 22:20:01,098 - Device-192.168.0.100:40765 - Instagram share option clicked
+2025-08-19 22:20:09,513 - Device-192.168.0.100:40765 - Instagram share clicked but Reels editor not detected yet
+2025-08-19 22:20:09,514 - Device-192.168.0.100:40765 - Scrolling down the share popup to reveal more options
+2025-08-19 22:20:12,262 - Device-192.168.0.100:40765 - Attempt 2 to find and click Instagram share option
+2025-08-19 22:20:12,366 - Device-192.168.0.100:40765 - ❌ Element not found: android.widget.LinearLayout
+2025-08-19 22:20:12,367 - Device-192.168.0.100:40765 - Instagram share option not found on this attempt
+2025-08-19 22:20:12,367 - Device-192.168.0.100:40765 - Scrolling down the share popup to reveal more options
+2025-08-19 22:40:54,483 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:40:54,484 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:40:56,900 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:40:56,900 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:40:56,901 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:41:10,902 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:41:18,452 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:41:18,843 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:41:18,844 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:41:18,844 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:41:58,429 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:41:58,430 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:42:00,765 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:42:00,765 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:42:00,766 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:42:10,767 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:42:24,186 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:42:24,254 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:42:24,255 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:42:24,256 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:42:39,257 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:45:00,179 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:45:00,179 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:45:01,657 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:45:01,658 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:45:01,659 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:45:08,660 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:46:02,189 - Device-192.168.0.100:40765 - ❌ Element not found for long click: android.widget.RelativeLayout
+2025-08-19 22:46:03,721 - Device-192.168.0.100:40765 - ✅ Long clicked: android.view.View index 0
+2025-08-19 22:46:03,721 - Device-192.168.0.100:40765 - ✅ Fallback selector used for file selection
+2025-08-19 22:46:03,846 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:46:03,846 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:46:03,846 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:46:12,847 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:47:01,155 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:47:01,285 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:47:01,285 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:47:01,286 - Device-192.168.0.100:40765 - 🔄 Starting cycle 3/100
+2025-08-19 22:47:18,044 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:47:18,046 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:47:19,983 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:47:19,983 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:47:19,984 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:47:28,985 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:47:55,678 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:47:55,679 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:47:57,923 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:47:57,923 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:47:57,924 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:48:04,926 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:48:50,457 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:48:50,672 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:48:50,673 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:48:50,673 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:48:56,675 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:49:22,975 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:49:22,976 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:49:24,059 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:49:24,059 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:49:24,060 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:49:36,062 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:49:59,755 - Device-192.168.0.100:40765 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal Storage']", 'method': 'wait'}
+2025-08-19 22:50:09,757 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:50:19,759 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:50:43,651 - Device-192.168.0.100:40765 - ❌ Error in cycle 2: {'code': -32002, 'data': "Selector [text='Internal Storage']", 'method': 'wait'}
+2025-08-19 22:50:53,652 - Device-192.168.0.100:40765 - 🔄 Starting cycle 3/100
+2025-08-19 22:51:02,653 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:51:27,212 - Device-192.168.0.100:40765 - ❌ Error in cycle 3: {'code': -32002, 'data': "Selector [text='Internal Storage']", 'method': 'wait'}
+2025-08-19 22:51:42,463 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:51:42,464 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:51:43,489 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:51:43,489 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:51:43,490 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:51:57,491 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:52:21,253 - Device-192.168.0.100:40765 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal Storage']", 'method': 'wait'}
+2025-08-19 22:52:31,255 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:52:41,256 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:52:56,053 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:52:56,054 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:52:57,862 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:52:57,862 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:52:57,863 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:53:09,864 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:53:14,703 - Device-192.168.0.100:40765 - 📁 Navigated to Internal Storage
+2025-08-19 22:53:22,872 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:53:26,957 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:53:28,892 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:53:36,322 - Device-192.168.0.100:40765 - ❌ Element not found for long click: android.widget.RelativeLayout
+2025-08-19 22:53:38,020 - Device-192.168.0.100:40765 - ✅ Long clicked: android.view.View index 0
+2025-08-19 22:53:38,020 - Device-192.168.0.100:40765 - ✅ Fallback selector used for file selection
+2025-08-19 22:53:38,110 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:53:38,111 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:53:38,111 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-19 22:53:46,112 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:53:50,449 - Device-192.168.0.100:40765 - 📁 Navigated to Internal Storage
+2025-08-19 22:53:58,627 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:54:02,678 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:54:20,469 - Device-192.168.0.100:40765 - ⏳ Waiting 0 seconds before starting...
+2025-08-19 22:54:20,470 - Device-192.168.0.100:40765 - Attempting to connect (attempt 1/3)
+2025-08-19 22:54:21,557 - Device-192.168.0.100:40765 - ✅ Successfully connected
+2025-08-19 22:54:21,559 - Device-192.168.0.100:40765 - 🚀 Starting automation...
+2025-08-19 22:54:21,560 - Device-192.168.0.100:40765 - 🔄 Starting cycle 1/100
+2025-08-19 22:54:27,561 - Device-192.168.0.100:40765 - 📱 Launching file manager
+2025-08-19 22:54:34,261 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:54:38,459 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:54:42,704 - Device-192.168.0.100:40765 - 🔄 Scrolling to find the file
+2025-08-19 22:54:45,559 - Device-192.168.0.100:40765 - ✅ Long clicked: android.widget.RelativeLayout index 0
+2025-08-19 22:54:45,730 - Device-192.168.0.100:40765 - ❌ Element not found: com.google.android.apps.nbu.files:id/share_action
+2025-08-19 22:54:45,730 - Device-192.168.0.100:40765 - Skipping cycle - share failed
+2025-08-19 22:54:45,731 - Device-192.168.0.100:40765 - 🔄 Starting cycle 2/100
+2025-08-27 02:09:09,178 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:09:09,179 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:09:12,504 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:09:12,504 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:09:12,505 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:09:17,506 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:09:21,108 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:09:21,108 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:09:23,179 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:09:25,180 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:09:28,288 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/container
+2025-08-27 02:09:28,289 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:09:29,446 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:09:32,046 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:13:53,313 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:13:53,314 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:13:56,464 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:13:56,464 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:13:56,465 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:14:02,467 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:14:06,021 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:14:06,021 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:14:12,920 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:14:14,921 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:14:18,081 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/container
+2025-08-27 02:14:18,081 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:14:19,151 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:14:22,334 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:19:16,801 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:19:16,802 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:19:17,677 - Device-192.168.0.100:39389 - ❌ Connection failed: [server] INFO: [UiAutomator2Server] Starting Server
+java.lang.IllegalStateException: UiAutomationService android.accessibilityservice.IAccessibilityServiceClient$Stub$Proxy@6eb3728already registered!
+	at android.os.Parcel.createExceptionOrNull(Parcel.java:2382)
+	at android.os.Parcel.createException(Parcel.java:2358)
+	at android.os.Parcel.readException(Parcel.java:2341)
+	at android.os.Parcel.readException(Parcel.java:2283)
+	at android.view.accessibility.IAccessibilityManager$Stub$Proxy.registerUiTestAutomationService(IAccessibilityManager.java:739)
+	at android.app.UiAutomationConnection.registerUiTestAutomationServiceLocked(UiAutomationConnection.java:456)
+	at android.app.UiAutomationConnection.connect(UiAutomationConnection.java:106)
+	at android.app.UiAutomation.connect(UiAutomation.java:243)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at mirror.RefMethod.call(RefMethod.java:63)
+	at uiautomator.InstrumentShellWrapper.getUiAutomation(InstrumentShellWrapper.java:97)
+	at androidx.test.uiautomator.UiDevice$Api24Impl.getUiAutomationWithRetry(UiDevice.java:1545)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1468)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+Caused by: android.os.RemoteException: Remote stack trace:
+	at com.android.server.accessibility.UiAutomationManager.registerUiTestAutomationServiceLocked(UiAutomationManager.java:97)
+	at com.android.server.accessibility.AccessibilityManagerService.registerUiTestAutomationService(AccessibilityManagerService.java:868)
+	at android.view.accessibility.IAccessibilityManager$Stub.onTransact(IAccessibilityManager.java:371)
+	at android.os.Binder.execTransactInternal(Binder.java:1168)
+	at android.os.Binder.execTransact(Binder.java:1132)
+
+java.lang.IllegalStateException: UiAutomation not connected, UiAutomation@2e0c185[id=-1, flags=0]
+	at android.app.UiAutomation.throwIfNotConnectedLocked(UiAutomation.java:1239)
+	at android.app.UiAutomation.getServiceInfo(UiAutomation.java:497)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1482)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+
+2025-08-27 02:19:22,681 - Device-192.168.0.100:39389 - Attempting to connect (attempt 2/3)
+2025-08-27 02:19:23,485 - Device-192.168.0.100:39389 - ❌ Connection failed: [server] INFO: [UiAutomator2Server] Starting Server
+java.lang.IllegalStateException: UiAutomationService android.accessibilityservice.IAccessibilityServiceClient$Stub$Proxy@697d279already registered!
+	at android.os.Parcel.createExceptionOrNull(Parcel.java:2382)
+	at android.os.Parcel.createException(Parcel.java:2358)
+	at android.os.Parcel.readException(Parcel.java:2341)
+	at android.os.Parcel.readException(Parcel.java:2283)
+	at android.view.accessibility.IAccessibilityManager$Stub$Proxy.registerUiTestAutomationService(IAccessibilityManager.java:739)
+	at android.app.UiAutomationConnection.registerUiTestAutomationServiceLocked(UiAutomationConnection.java:456)
+	at android.app.UiAutomationConnection.connect(UiAutomationConnection.java:106)
+	at android.app.UiAutomation.connect(UiAutomation.java:243)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at mirror.RefMethod.call(RefMethod.java:63)
+	at uiautomator.InstrumentShellWrapper.getUiAutomation(InstrumentShellWrapper.java:97)
+	at androidx.test.uiautomator.UiDevice$Api24Impl.getUiAutomationWithRetry(UiDevice.java:1545)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1468)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+Caused by: android.os.RemoteException: Remote stack trace:
+	at com.android.server.accessibility.UiAutomationManager.registerUiTestAutomationServiceLocked(UiAutomationManager.java:97)
+	at com.android.server.accessibility.AccessibilityManagerService.registerUiTestAutomationService(AccessibilityManagerService.java:868)
+	at android.view.accessibility.IAccessibilityManager$Stub.onTransact(IAccessibilityManager.java:371)
+	at android.os.Binder.execTransactInternal(Binder.java:1168)
+	at android.os.Binder.execTransact(Binder.java:1132)
+
+java.lang.IllegalStateException: UiAutomation not connected, UiAutomation@fec56d3[id=-1, flags=0]
+	at android.app.UiAutomation.throwIfNotConnectedLocked(UiAutomation.java:1239)
+	at android.app.UiAutomation.getServiceInfo(UiAutomation.java:497)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1482)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+
+2025-08-27 02:19:26,757 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:19:26,758 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:19:27,625 - Device-192.168.0.100:39389 - ❌ Connection failed: [server] INFO: [UiAutomator2Server] Starting Server
+java.lang.IllegalStateException: UiAutomationService android.accessibilityservice.IAccessibilityServiceClient$Stub$Proxy@4ba1d35already registered!
+	at android.os.Parcel.createExceptionOrNull(Parcel.java:2382)
+	at android.os.Parcel.createException(Parcel.java:2358)
+	at android.os.Parcel.readException(Parcel.java:2341)
+	at android.os.Parcel.readException(Parcel.java:2283)
+	at android.view.accessibility.IAccessibilityManager$Stub$Proxy.registerUiTestAutomationService(IAccessibilityManager.java:739)
+	at android.app.UiAutomationConnection.registerUiTestAutomationServiceLocked(UiAutomationConnection.java:456)
+	at android.app.UiAutomationConnection.connect(UiAutomationConnection.java:106)
+	at android.app.UiAutomation.connect(UiAutomation.java:243)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at mirror.RefMethod.call(RefMethod.java:63)
+	at uiautomator.InstrumentShellWrapper.getUiAutomation(InstrumentShellWrapper.java:97)
+	at androidx.test.uiautomator.UiDevice$Api24Impl.getUiAutomationWithRetry(UiDevice.java:1545)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1468)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+Caused by: android.os.RemoteException: Remote stack trace:
+	at com.android.server.accessibility.UiAutomationManager.registerUiTestAutomationServiceLocked(UiAutomationManager.java:97)
+	at com.android.server.accessibility.AccessibilityManagerService.registerUiTestAutomationService(AccessibilityManagerService.java:868)
+	at android.view.accessibility.IAccessibilityManager$Stub.onTransact(IAccessibilityManager.java:371)
+	at android.os.Binder.execTransactInternal(Binder.java:1168)
+	at android.os.Binder.execTransact(Binder.java:1132)
+
+java.lang.IllegalStateException: UiAutomation not connected, UiAutomation@3496507[id=-1, flags=0]
+	at android.app.UiAutomation.throwIfNotConnectedLocked(UiAutomation.java:1239)
+	at android.app.UiAutomation.getServiceInfo(UiAutomation.java:497)
+	at androidx.test.uiautomator.UiDevice.getUiAutomation(UiDevice.java:1482)
+	at androidx.test.uiautomator.QueryController.<init>(QueryController.java:95)
+	at androidx.test.uiautomator.UiDevice.<init>(UiDevice.java:115)
+	at androidx.test.uiautomator.UiDevice.getInstance(UiDevice.java:296)
+	at com.wetest.uia2.Main.runServer(Main.java:50)
+	at com.wetest.uia2.Main.main(Main.java:30)
+	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:399)
+
+2025-08-27 02:19:35,843 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:19:35,844 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:19:37,434 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:19:37,434 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:19:37,435 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:19:46,436 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:19:49,902 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:19:49,902 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:19:51,127 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:19:53,128 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:19:56,450 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/profile_tab
+2025-08-27 02:19:56,463 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:19:57,558 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:20:06,710 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:20:06,711 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:20:07,730 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:20:07,730 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:20:07,731 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:20:22,732 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:20:26,170 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:20:26,170 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:20:27,294 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:20:29,295 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:20:32,499 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/profile_tab
+2025-08-27 02:20:32,499 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:20:33,607 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:20:35,841 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:21:00,307 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:21:00,308 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:21:01,254 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:21:01,254 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:21:01,255 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:21:12,256 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:21:15,552 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:21:15,552 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:21:16,433 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:21:18,434 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:21:21,632 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/profile_tab
+2025-08-27 02:21:21,632 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:21:22,804 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:21:25,547 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:22:07,340 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:22:07,341 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:22:08,290 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:22:08,300 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:22:08,301 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:22:22,303 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:22:25,653 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:22:25,653 - Device-192.168.0.100:39389 - 🔄 Opening account switcher
+2025-08-27 02:22:26,642 - Device-192.168.0.100:39389 - ✅ Clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:22:28,643 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:22:57,832 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:22:57,833 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:22:58,818 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:22:58,819 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:22:58,819 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:23:13,820 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:23:17,212 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:23:17,212 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:23:20,409 - Device-192.168.0.100:39389 - ❌ Double click failed: com.instagram.android:id/profile_tab
+2025-08-27 02:23:20,410 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:23:21,575 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:24:34,046 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:24:34,046 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:24:35,733 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:24:35,733 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:24:35,734 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:24:44,736 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:24:48,396 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:24:48,396 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:24:51,582 - Device-192.168.0.100:39389 - ❌ Double click error: (-32001, 'androidx.test.uiautomator.UiObjectNotFoundException', ({'mask': 10485760, 'childOrSibling': [], 'childOrSiblingSelector': [], 'resourceId': 'com.instagram.android:id/profile_tab', 'index': 0},))
+2025-08-27 02:24:51,583 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:24:52,746 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:24:55,419 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:25:20,220 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:25:20,220 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:25:22,109 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:25:22,110 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:25:22,110 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:25:36,111 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:25:39,807 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:25:39,807 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:25:44,274 - Device-192.168.0.100:39389 - ✅ Double clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:25:44,275 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:25:45,418 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:25:48,299 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:26:23,199 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:26:23,200 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:26:24,253 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:26:24,253 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:26:24,254 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:26:30,256 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:26:33,655 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:26:33,656 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:26:37,689 - Device-192.168.0.100:39389 - ✅ Double clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:26:37,689 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:26:38,870 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:26:41,657 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:26:46,717 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:26:46,718 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:26:47,745 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:26:47,745 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:26:47,746 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:26:58,746 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:27:02,105 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:27:02,105 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:27:03,230 - Device-192.168.0.100:39389 - ✅ Double clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:27:03,231 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:27:04,403 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:27:06,927 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:27:23,147 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:27:23,148 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:27:24,189 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:27:24,189 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:27:24,190 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:27:37,191 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:27:41,351 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:27:41,351 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:27:42,627 - Device-192.168.0.100:39389 - ✅ Double clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:27:42,627 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:27:43,805 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down
+2025-08-27 02:27:47,000 - Device-192.168.0.100:39389 - ❌ Error in cycle 1: {'code': -32002, 'data': "Selector [text='Internal storage']", 'method': 'wait'}
+2025-08-27 02:28:31,642 - Device-192.168.0.100:39389 - ⏳ Waiting 0 seconds before starting...
+2025-08-27 02:28:31,645 - Device-192.168.0.100:39389 - Attempting to connect (attempt 1/3)
+2025-08-27 02:28:43,412 - Device-192.168.0.100:39389 - ✅ Successfully connected
+2025-08-27 02:28:43,412 - Device-192.168.0.100:39389 - 🚀 Starting automation...
+2025-08-27 02:28:43,413 - Device-192.168.0.100:39389 - 🔄 Starting cycle 1/100
+2025-08-27 02:28:53,414 - Device-192.168.0.100:39389 - 📱 Launching file manager
+2025-08-27 02:29:08,509 - Device-192.168.0.100:39389 - 🔄 Switching accounts for next cycle
+2025-08-27 02:29:08,509 - Device-192.168.0.100:39389 - 🔄 Switching to second account
+2025-08-27 02:29:18,778 - Device-192.168.0.100:39389 - ✅ Double clicked: com.instagram.android:id/profile_tab
+2025-08-27 02:29:18,779 - Device-192.168.0.100:39389 - 📁 Navigating to Internal storage/MEMES2
+2025-08-27 02:29:21,881 - Device-192.168.0.100:39389 - ❌ Failed to navigate to Internal storage, scrolling down

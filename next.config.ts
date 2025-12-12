@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.alicdn.com",
       },
+      {
+        protocol: "https",
+        hostname: "127.0.0.1:5000",
+      },
     ],
   },
 };

@@ -1,0 +1,156 @@
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+[INFO] Safely dropped all rows from 1688_order_list_en
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from 1688_orders_by_products
+Created 100 order-product records
+Processing completed:
+- Orders: 100 unique orders
+- Products: 94 unique products
+- Order-Product relationships: 100 records
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from AMZN_PRODUCT_LIST
+[INFO] Translated tradeTerms.phase column to English (unique=94)
+[INFO] Translated tradeTerms.payStatusDesc column to English (unique=1)
+[INFO] Translated nativeLogistics.area column to English (unique=1)
+[INFO] Translated nativeLogistics.address column to English (unique=1)
+[INFO] Translated nativeLogistics.town column to English (unique=1)
+[INFO] Translated nativeLogistics.city column to English (unique=1)
+[INFO] Translated nativeLogistics.contactPerson column to English (unique=6)
+[INFO] Translated nativeLogistics.province column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.name column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.companyName column to English (unique=1)
+[INFO] Translated baseInfo.sellerContact.imInPlatform column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.name column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.companyName column to English (unique=93)
+[INFO] Translated baseInfo.receiverInfo.toFullName column to English (unique=6)
+[INFO] Translated baseInfo.receiverInfo.toArea column to English (unique=1)
+[INFO] Translated baseInfo.buyerLoginId column to English (unique=1)
+[INFO] Translated orderBizInfo.creditOrderDetail.statusStr column to English (unique=1)
+[INFO] Translated productItems.name column to English (unique=94)
+[INFO] Translated productItems.unit column to English (unique=14)
+[INFO] Translated productItems.guaranteesTerms column to English (unique=25)
+[INFO] Translated productItems.productCargoNumber column to English (unique=79)
+[INFO] Translated productItems.skuInfos column to English (unique=111)
+[INFO] Translated productItems.statusStr column to English (unique=4)
+[INFO] Translated productItems.cargoNumber column to English (unique=47)
+[INFO] Translated baseInfo.remark column to English (unique=5)
+[INFO] Translated applyReason column to English (unique=4)
+[INFO] Translated productName column to English (unique=45)
+[INFO] Translated extInfo.apply_reason_text column to English (unique=4)
+[INFO] Translated extInfo.sellerDoRefundNick column to English (unique=8)
+[INFO] Translated extInfo.refuse_reason_txt column to English (unique=2)
+[INFO] Translated extInfo.refuse_reason_msg column to English (unique=2)
+[INFO] Safely dropped all rows from 1688_refunded_orders_en
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+[INFO] Safely dropped all rows from 1688_order_list_en
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from 1688_orders_by_products
+Created 100 order-product records
+Processing completed:
+- Orders: 100 unique orders
+- Products: 94 unique products
+- Order-Product relationships: 100 records
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from AMZN_PRODUCT_LIST
+[INFO] Translated tradeTerms.phase column to English (unique=94)
+[INFO] Translated tradeTerms.payStatusDesc column to English (unique=1)
+[INFO] Translated nativeLogistics.area column to English (unique=1)
+[INFO] Translated nativeLogistics.address column to English (unique=1)
+[INFO] Translated nativeLogistics.town column to English (unique=1)
+[INFO] Translated nativeLogistics.city column to English (unique=1)
+[INFO] Translated nativeLogistics.contactPerson column to English (unique=6)
+[INFO] Translated nativeLogistics.province column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.name column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.companyName column to English (unique=1)
+[INFO] Translated baseInfo.sellerContact.imInPlatform column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.name column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.companyName column to English (unique=93)
+[INFO] Translated baseInfo.receiverInfo.toFullName column to English (unique=6)
+[INFO] Translated baseInfo.receiverInfo.toArea column to English (unique=1)
+[INFO] Translated baseInfo.buyerLoginId column to English (unique=1)
+[INFO] Translated orderBizInfo.creditOrderDetail.statusStr column to English (unique=1)
+[INFO] Translated productItems.name column to English (unique=94)
+[INFO] Translated productItems.unit column to English (unique=14)
+[INFO] Translated productItems.guaranteesTerms column to English (unique=25)
+[INFO] Translated productItems.productCargoNumber column to English (unique=79)
+[INFO] Translated productItems.skuInfos column to English (unique=111)
+[INFO] Translated productItems.statusStr column to English (unique=4)
+[INFO] Translated productItems.cargoNumber column to English (unique=47)
+[INFO] Translated baseInfo.remark column to English (unique=5)
+[INFO] Translated applyReason column to English (unique=4)
+[INFO] Translated productName column to English (unique=45)
+[INFO] Translated extInfo.apply_reason_text column to English (unique=4)
+[INFO] Translated extInfo.sellerDoRefundNick column to English (unique=8)
+[INFO] Translated extInfo.refuse_reason_txt column to English (unique=2)
+[INFO] Translated extInfo.refuse_reason_msg column to English (unique=2)
+[INFO] Safely dropped all rows from 1688_refunded_orders_en
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+/root/Desktop/amazon-1688-apis/translate.py:38: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+[INFO] Safely dropped all rows from 1688_order_list_en
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from 1688_orders_by_products
+Created 100 order-product records
+Processing completed:
+- Orders: 100 unique orders
+- Products: 94 unique products
+- Order-Product relationships: 100 records
+[INFO] Safely dropped all rows from 1688_product_list_en
+[INFO] Safely dropped all rows from AMZN_PRODUCT_LIST
+[INFO] Translated tradeTerms.phase column to English (unique=94)
+[INFO] Translated tradeTerms.payStatusDesc column to English (unique=1)
+[INFO] Translated nativeLogistics.area column to English (unique=1)
+[INFO] Translated nativeLogistics.address column to English (unique=1)
+[INFO] Translated nativeLogistics.town column to English (unique=1)
+[INFO] Translated nativeLogistics.city column to English (unique=1)
+[INFO] Translated nativeLogistics.contactPerson column to English (unique=6)
+[INFO] Translated nativeLogistics.province column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.name column to English (unique=1)
+[INFO] Translated baseInfo.buyerContact.companyName column to English (unique=1)
+[INFO] Translated baseInfo.sellerContact.imInPlatform column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.name column to English (unique=93)
+[INFO] Translated baseInfo.sellerContact.companyName column to English (unique=93)
+[INFO] Translated baseInfo.receiverInfo.toFullName column to English (unique=6)
+[INFO] Translated baseInfo.receiverInfo.toArea column to English (unique=1)
+[INFO] Translated baseInfo.buyerLoginId column to English (unique=1)
+[INFO] Translated orderBizInfo.creditOrderDetail.statusStr column to English (unique=1)
+[INFO] Translated productItems.name column to English (unique=94)
+[INFO] Translated productItems.unit column to English (unique=14)
+[INFO] Translated productItems.guaranteesTerms column to English (unique=25)
+[INFO] Translated productItems.productCargoNumber column to English (unique=79)
+[INFO] Translated productItems.skuInfos column to English (unique=111)
+[INFO] Translated productItems.statusStr column to English (unique=4)
+[INFO] Translated productItems.cargoNumber column to English (unique=47)
+[INFO] Translated baseInfo.remark column to English (unique=5)
+[INFO] Translated applyReason column to English (unique=4)
+[INFO] Translated productName column to English (unique=45)
+[INFO] Translated extInfo.apply_reason_text column to English (unique=4)
+[INFO] Translated extInfo.sellerDoRefundNick column to English (unique=8)
+[INFO] Translated extInfo.refuse_reason_txt column to English (unique=2)
+[INFO] Translated extInfo.refuse_reason_msg column to English (unique=2)
+[INFO] Safely dropped all rows from 1688_refunded_orders_en

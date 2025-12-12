@@ -154,8 +154,9 @@ export default function PriceEstimationPage() {
         currency: currency,
       });
 
-      const res = await fetch(`http://localhost:5000/api/get-price-estimation?${params.toString()}`);
+      const res = await fetch(`/api/proxy-price-estimation?${params.toString()}`);
       const data = await res.json();
+      console.log('Fee estimation response data:', data);
 
       if (data.success && data.data?.FeesEstimateResult?.FeesEstimate) {
         const feesEstimate = data.data.FeesEstimateResult.FeesEstimate;
@@ -298,8 +299,8 @@ export default function PriceEstimationPage() {
                         key={product.id}
                         onClick={() => selectProduct(product)}
                         className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${selectedProduct?.id === product.id
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
                           }`}
                       >
                         <div className="flex justify-between items-start gap-4">
@@ -508,7 +509,7 @@ export default function PriceEstimationPage() {
                                 <span className="text-gray-600">Per Item Fee:</span>
                                 <span className="font-medium text-gray-900">{formatCurrency(est.perItemFee || 0)}</span>
                               </div>
-                              <div className="border-t border-gray-300 text-gray-800 pt-2 mt-2 flex justify-between font-semibold">
+                              <div className="border-t border-gray-300 pt-2 mt-2 flex justify-between font-semibold">
                                 <span className="text-gray-900">Total Fees:</span>
                                 <span className="text-red-600">{formatCurrency(est.totalFees || 0)}</span>
                               </div>

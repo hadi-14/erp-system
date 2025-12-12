@@ -79,10 +79,8 @@ export default function AdminPagesPage() {
         };
         checkAuth();
 
-        // Load pages - you can replace this with your actual API endpoint
         const fetchPages = async () => {
             try {
-                // Mock data - replace with your actual API call
                 const mockPages: Page[] = [
                     {
                         id: 1,
@@ -128,8 +126,6 @@ export default function AdminPagesPage() {
                     },
                 ];
 
-                // const res = await fetch("/api/admin/pages");
-                // const data = await res.json();
                 setPages(mockPages);
                 if (mockPages.length > 0) {
                     setSelectedPage(mockPages[0]);
@@ -154,7 +150,6 @@ export default function AdminPagesPage() {
     };
 
     const openInNewTab = () => {
-        // No-op or show a message, since components can't be opened in a new tab
         alert("Open in new tab is not supported for embedded components.");
     };
 
@@ -190,28 +185,26 @@ export default function AdminPagesPage() {
             <aside className={`
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 fixed lg:relative lg:translate-x-0 z-30
+                h-screen lg:h-auto
                 w-80 bg-white border-r border-gray-200 shadow-xl lg:shadow-sm
                 transition-transform duration-300 ease-in-out
-                flex flex-col
+                flex flex-col overflow-hidden
             `}>
                 {/* Sidebar Header */}
-                <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+                <div className="flex-shrink-0 p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                            <Image
-                                src="/logo.png"
-                                alt="Logo"
-                                width={80}
-                                height={80}
-                            />
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800">Admin Panel</h2>
-                                <p className="text-sm text-gray-500">Management Console</p>
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Monitor className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-lg font-bold text-gray-800 truncate">Admin Panel</h2>
+                                <p className="text-xs text-gray-500">Management Console</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setSidebarOpen(false)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-white/50 transition-colors"
+                            className="lg:hidden p-2 rounded-lg hover:bg-white/50 transition-colors flex-shrink-0"
                         >
                             <X className="w-5 h-5 text-gray-600" />
                         </button>
@@ -219,7 +212,7 @@ export default function AdminPagesPage() {
 
                     {/* Search */}
                     <div className="relative mb-4">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                         <input
                             type="text"
                             placeholder="Search pages..."
@@ -236,7 +229,7 @@ export default function AdminPagesPage() {
                                 <button
                                     key={category}
                                     onClick={() => setSelectedCategory(category)}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${selectedCategory === category
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all whitespace-nowrap ${selectedCategory === category
                                         ? "bg-purple-500 text-white shadow-lg"
                                         : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
                                         }`}
@@ -249,14 +242,14 @@ export default function AdminPagesPage() {
                 </div>
 
                 {/* Pages List */}
-                <div className="flex-1 p-4 overflow-y-auto">
-                    <div className="mb-4">
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                <div className="flex-1 min-h-0 flex flex-col p-4 overflow-hidden">
+                    <div className="flex-shrink-0 mb-4">
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
                             Admin Pages ({filteredPages.length})
                         </h3>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-2">
                         {filteredPages.map((page) => (
                             <button
                                 key={page.id}
@@ -265,14 +258,14 @@ export default function AdminPagesPage() {
                                     setSidebarOpen(false);
                                 }}
                                 className={`
-                  w-full text-left px-4 py-3 rounded-xl text-sm transition-all group
-                  ${selectedPage?.id === page.id
+                                    w-full text-left px-4 py-3 rounded-xl text-sm transition-all group
+                                    ${selectedPage?.id === page.id
                                         ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg"
                                         : "hover:bg-gray-100 text-gray-700 hover:text-gray-900"
                                     }
-                `}
+                                `}
                             >
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-start space-x-3 min-w-0 flex-1">
                                         <Globe className={`w-4 h-4 mt-0.5 flex-shrink-0 ${selectedPage?.id === page.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
                                             }`} />
@@ -299,58 +292,60 @@ export default function AdminPagesPage() {
                                 </div>
                             </button>
                         ))}
-                    </div>
 
-                    {filteredPages.length === 0 && searchTerm && (
-                        <div className="text-center py-8 text-gray-500">
-                            <Globe className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                            <p className="text-sm">No pages found for &quot;{searchTerm}&quot;</p>
-                        </div>
-                    )}
+                        {filteredPages.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <Globe className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                <p className="text-sm">{searchTerm ? `No pages found for "${searchTerm}"` : 'No pages available'}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* User Menu */}
-                <div className="p-4 border-t border-gray-100">
+                <div className="flex-shrink-0 p-4 border-t border-gray-100 bg-gray-50 space-y-2 max-h-64 overflow-y-auto">
+                    <button
+                        onClick={() => router.replace('/')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold text-sm hover:from-red-600 hover:to-orange-600 transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                        <Settings className="w-4 h-4" />
+                        <span className="truncate">Main User Panel</span>
+                    </button>
+
+                    <button
+                        onClick={() => router.replace('/admin/dashboard/stock')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold text-sm hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                        <Monitor className="w-4 h-4" />
+                        <span className="truncate">Stock Management</span>
+                    </button>
+
                     <div className="relative">
                         <button
-                            onClick={() => router.replace('/')}
-                            className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold text-sm hover:from-red-600 hover:to-orange-600 transition-all shadow-lg flex items-center justify-center"
-                        >
-                            <Settings className="w-4 h-4 mr-2" />
-                            Switch to Main User Panel
-                        </button>
-                        <button
-                            onClick={() => router.replace('/admin/dashboard/stock')}
-                            className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold text-sm hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg flex items-center justify-center"
-                        >
-                            <Monitor className="w-4 h-4 mr-2" />
-                            Main Stock Management
-                        </button>
-                        <button
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
-                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors"
+                            className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl hover:bg-white transition-colors border border-gray-200"
                         >
-                            <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
                                 <User className="w-4 h-4 text-white" />
                             </div>
-                            <div className="flex-1 text-left">
-                                <p className="text-sm font-medium text-gray-800">{camelize(userData?.role || '')} User</p>
-                                <p className="text-xs text-gray-500">{userData?.email}</p>
+                            <div className="flex-1 text-left min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">{camelize(userData?.role || '')} User</p>
+                                <p className="text-xs text-gray-500 truncate">{userData?.email}</p>
                             </div>
-                            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-90' : ''}`} />
+                            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${userMenuOpen ? 'rotate-90' : ''}`} />
                         </button>
 
                         {userMenuOpen && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2">
-                                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
-                                    <Settings className="w-4 h-4" />
+                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-10">
+                                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors">
+                                    <Settings className="w-4 h-4 flex-shrink-0" />
                                     <span>Settings</span>
                                 </button>
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-4 h-4 flex-shrink-0" />
                                     <span>Sign Out</span>
                                 </button>
                             </div>
@@ -362,34 +357,34 @@ export default function AdminPagesPage() {
             {/* Main Area */}
             <main className="flex-1 flex flex-col min-w-0">
                 {/* Header */}
-                <header className="bg-white border-b border-gray-200 shadow-sm">
+                <header className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
                     <div className="px-6 py-4 flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-4 min-w-0">
                             <button
-                                onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
                             >
                                 <Menu className="w-5 h-5 text-gray-600" />
                             </button>
 
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">
+                            <div className="min-w-0 flex-1">
+                                <h1 className="text-2xl font-bold text-gray-900 truncate">
                                     {selectedPage ? selectedPage.name : "Select a Page"}
                                 </h1>
                                 {selectedPage && (
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-gray-500 mt-1 truncate">
                                         {selectedPage.description || "Admin page"} • {selectedPage.category || "General"}
                                     </p>
                                 )}
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3 flex-shrink-0">
                             {selectedPage && (
                                 <>
                                     <button
                                         onClick={openInNewTab}
-                                        className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium bg-white hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all"
+                                        className="hidden sm:inline-flex items-center px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium bg-white hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all"
                                     >
                                         <ExternalLink className="w-4 h-4 mr-2" />
                                         Open in New Tab
@@ -411,7 +406,7 @@ export default function AdminPagesPage() {
                                         {isFullscreen ? (
                                             <>
                                                 <Minimize2 className="w-4 h-4 mr-2" />
-                                                Exit Fullscreen
+                                                Exit
                                             </>
                                         ) : (
                                             <>
@@ -427,7 +422,7 @@ export default function AdminPagesPage() {
                 </header>
 
                 {/* Page Viewer */}
-                <div className="flex-1 relative bg-white">
+                <div className="flex-1 relative bg-white overflow-hidden">
                     {selectedPage ? (
                         <>
                             {/* Loading State */}
@@ -452,7 +447,7 @@ export default function AdminPagesPage() {
                                         <p className="text-gray-600 mb-6">
                                             There was an error loading the admin page. Please try refreshing or contact support if the problem persists.
                                         </p>
-                                        <div className="flex gap-3 justify-center">
+                                        <div className="flex gap-3 justify-center flex-wrap">
                                             <button
                                                 onClick={refreshPage}
                                                 className="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-colors"
@@ -462,7 +457,7 @@ export default function AdminPagesPage() {
                                             </button>
                                             <button
                                                 onClick={openInNewTab}
-                                                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-800 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                                                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
                                             >
                                                 <ExternalLink className="w-4 h-4 mr-2" />
                                                 Open Direct
@@ -473,7 +468,7 @@ export default function AdminPagesPage() {
                             )}
 
                             {/* Page Content */}
-                            <div className="w-full h-full">
+                            <div className="w-full h-full overflow-auto">
                                 <selectedPage.component />
                             </div>
                         </>

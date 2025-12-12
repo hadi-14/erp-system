@@ -718,7 +718,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Upload CSV File
                     </label>
-                    <div className="border-2 border-dashed border-gray-300 text-gray-800 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors">
                       <input
                         type="file"
                         accept=".csv"
@@ -878,7 +878,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <input
                         type="text"
                         placeholder="Paste Amazon URL or enter ASIN (e.g., B08XYZ1234)"
-                        className="w-full px-4 py-3 pr-12 border border-gray-300 text-gray-800 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-950"
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-950"
                         value={asinInput}
                         onChange={(e) => setAsinInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAsinExtraction()}
@@ -996,7 +996,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <input
                         type="text"
                         placeholder="Search by SKU or product name..."
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-950"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-950"
                         value={ourProductSearch}
                         onChange={(e) => setOurProductSearch(e.target.value)}
                       />
@@ -1101,7 +1101,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <select
                         value={mappingData.mapping_priority}
                         onChange={(e) => setMappingData(prev => ({ ...prev, mapping_priority: parseInt(e.target.value) }))}
-                        className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                       >
                         <option value={1}>High Priority - Critical competitor</option>
                         <option value={2}>Medium Priority - Important to track</option>
@@ -1117,7 +1117,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <input
                         type="text"
                         placeholder="Why compare with this competitor?"
-                        className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                         value={mappingData.mapping_reason}
                         onChange={(e) => setMappingData(prev => ({ ...prev, mapping_reason: e.target.value }))}
                       />
@@ -1131,7 +1131,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <textarea
                         rows={3}
                         placeholder="Any additional information about this mapping..."
-                        className="w-full px-4 py-3 border border-gray-300 text-gray-800 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-950"
                         value={mappingData.mapping_notes}
                         onChange={(e) => setMappingData(prev => ({ ...prev, mapping_notes: e.target.value }))}
                       />
@@ -1178,7 +1178,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                 </div>
                 <button
                   onClick={() => setShowExistingMappings(!showExistingMappings)}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   {showExistingMappings ? 'Hide' : 'Show'} Mappings
                   {showExistingMappings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1196,7 +1196,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <input
                         type="text"
                         placeholder="Search mappings..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                         value={mappingsSearchTerm}
                         onChange={(e) => setMappingsSearchTerm(e.target.value)}
                       />
@@ -1204,7 +1204,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                     <select
                       value={mappingsPriorityFilter}
                       onChange={(e) => setMappingsPriorityFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                     >
                       <option value="all">All Priorities</option>
                       <option value="1">High Priority</option>
@@ -1214,7 +1214,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                     <select
                       value={mappingsActiveFilter}
                       onChange={(e) => setMappingsActiveFilter(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 text-gray-800 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-950"
                     >
                       <option value="all">All Status</option>
                       <option value="active">Active Only</option>
@@ -1384,14 +1384,14 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                       <button
                         onClick={() => setMappingsPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                         disabled={mappingsPagination.page <= 1}
-                        className="px-3 py-1.5 text-sm border border-gray-300 text-gray-800 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                       >
                         Previous
                       </button>
                       <button
                         onClick={() => setMappingsPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                         disabled={mappingsPagination.page >= mappingsPagination.totalPages}
-                        className="px-3 py-1.5 text-sm border border-gray-300 text-gray-800 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
                       >
                         Next
                       </button>

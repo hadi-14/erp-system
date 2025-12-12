@@ -294,7 +294,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 text-gray-800 transition-all duration-200"
+              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
             >
               <Filter className="w-5 h-5" />
               Filters

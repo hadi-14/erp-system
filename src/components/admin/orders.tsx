@@ -438,7 +438,7 @@ export default function OrdersPage() {
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="block w-48 rounded-md border-gray-300 text-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
+                    className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
                   >
                     <option value="all">All Orders</option>
                     <option value="approved">Approved</option>
@@ -452,7 +452,7 @@ export default function OrdersPage() {
                     placeholder="Search orders, buyers, products..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="block w-72 rounded-b-sm border-gray-300 text-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
+                    className="block w-72 rounded-b-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-950 p-2"
                   />
                 </div>
               </div>
@@ -499,7 +499,7 @@ export default function OrdersPage() {
                 {/* Bulk actions for selected orders */}
                 {selectedOrders.size > 0 && (
                   <>
-                    <div className="border-l border-gray-300 text-gray-800 mx-2"></div>
+                    <div className="border-l border-gray-300 mx-2"></div>
                     <button
                       onClick={() => handleBulkApproval(true, true)}
                       disabled={isPending}
@@ -644,8 +644,8 @@ export default function OrdersPage() {
                           onClick={() => handleApprovalToggle(order.baseInfo_id, order.approved_ || false)}
                           disabled={isPending}
                           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${order.approved_
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                              : 'bg-red-100 text-red-800 hover:bg-red-200'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           {isPending ? '...' : order.approved_ ? '✓ Approved' : '✗ Pending'}
@@ -736,7 +736,7 @@ export default function OrdersPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center rounded-md border border-gray-300 text-gray-800 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Previous
               </button>
@@ -746,7 +746,7 @@ export default function OrdersPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 text-gray-800 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Next
               </button>
@@ -788,8 +788,8 @@ export default function OrdersPage() {
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
                         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNumber
-                          ? 'z-10 bg-blue-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                            ? 'z-10 bg-blue-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
                           }`}
                       >
                         {pageNumber}

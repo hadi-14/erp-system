@@ -1,0 +1,9 @@
+sqlalchemy
+pandas
+dotenv
+python-amazon-sp-api
+flask
+flask-cors
+tqdm
+psycopg2
+undetected-chromedriver
