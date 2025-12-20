@@ -40,3 +40,7 @@ server.env
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.venv
+venv
+amazon-1688-apis/__pycache__/
+amazon-1688-apis/venv/

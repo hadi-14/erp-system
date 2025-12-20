@@ -7,3 +7,4 @@ flask-cors
 tqdm
 psycopg2
 undetected-chromedriver
+setuptools
