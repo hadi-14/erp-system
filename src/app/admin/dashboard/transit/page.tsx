@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { getTransits, createTransit, receiveTransit, getWarehouses, getStockItems } from '@/actions/stock';
-import { Truck, Plus, Check, X, ArrowRight, Calendar, Package } from 'lucide-react';
+import { Truck, Plus, Check, X, ArrowRight, Warehouse } from 'lucide-react';
+
+interface TransitItem {
+    id: number;
+    stock_item?: { sku: string };
+    quantity: number;
+    received_quantity: number;
+    status: string;
+}
 
 interface TransitData {
     id: number;
@@ -13,19 +21,32 @@ interface TransitData {
     shipped_date?: string;
     expected_delivery?: string;
     received_date?: string;
-    items: Array<{
-        id: number;
-        stock_item?: { sku: string };
-        quantity: number;
-        received_quantity: number;
-        status: string;
-    }>;
+    items: TransitItem[];
+}
+
+interface WarehouseData {
+    id: number;
+    name: string;
+    code: string;
+    location: string;
+    status: string;
+    capacity: number;
+    available_space: number;
+}
+
+interface StockItemData {
+    id: number;
+    sku: string;
+    warehouse_id: number;
+    quantity: number;
+    available_quantity: number;
+    status: string;
 }
 
 export default function TransitManagement() {
     const [transits, setTransits] = useState<TransitData[]>([]);
-    const [warehouses, setWarehouses] = useState<any[]>([]);
-    const [stockItems, setStockItems] = useState<any[]>([]);
+    const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
+    const [stockItems, setStockItems] = useState<StockItemData[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedTransit, setSelectedTransit] = useState<TransitData | null>(null);
@@ -50,9 +71,15 @@ export default function TransitManagement() {
                 getWarehouses(),
                 getStockItems()
             ]);
-            setTransits(t);
+            const transformedTransits = t.map(transit => ({
+                ...transit,
+                shipped_date: transit.shipped_date ? new Date(transit.shipped_date).toISOString().split('T')[0] : undefined,
+                expected_delivery: transit.expected_delivery ? new Date(transit.expected_delivery).toISOString().split('T')[0] : undefined,
+                received_date: transit.received_date ? new Date(transit.received_date).toISOString().split('T')[0] : undefined
+            }));
+            setTransits(transformedTransits);
             setWarehouses(w);
-            setStockItems(s);
+            setStockItems(s.filter(item => item.warehouse_id !== null) as StockItemData[]);
         } catch (error) {
             console.error('Failed to fetch data:', error);
         } finally {
@@ -94,7 +121,7 @@ export default function TransitManagement() {
             const transit = transits.find(t => t.id === transitId);
             if (!transit) return;
 
-            const receivedItems = transit.items.map((item: any) => ({
+            const receivedItems = transit.items.map((item: TransitItem) => ({
                 id: item.id,
                 quantity: item.quantity
             }));
@@ -155,7 +182,7 @@ export default function TransitManagement() {
     };
 
     const totalItems = transits.reduce((sum, t) => sum + (t.items?.length || 0), 0);
-    const totalUnits = transits.reduce((sum, t) => sum + t.items.reduce((s: number, i: any) => s + i.quantity, 0), 0);
+    const totalUnits = transits.reduce((sum, t) => sum + t.items.reduce((s: number, i: TransitItem) => s + i.quantity, 0), 0);
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
@@ -220,7 +247,7 @@ export default function TransitManagement() {
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${filterStatus === status
                                     ? 'bg-blue-600 text-white shadow-md'
-                                    : 'bg-white text-gray-700 border border-gray-300 text-gray-800 hover:border-gray-400 hover:shadow-sm'
+                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400 hover:shadow-sm'
                                 }`}
                         >
                             {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
@@ -279,7 +306,7 @@ export default function TransitManagement() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {transit.items?.slice(0, 3).map((item: any) => (
+                                                    {transit.items?.slice(0, 3).map((item: TransitItem) => (
                                                         <tr key={item.id} className="border-b border-gray-100 last:border-b-0 hover:bg-white/50">
                                                             <td className="px-3 py-2 font-medium text-gray-900">{item.stock_item?.sku || 'N/A'}</td>
                                                             <td className="px-3 py-2 text-gray-600">{item.quantity}</td>
@@ -339,7 +366,7 @@ export default function TransitManagement() {
                                         )}
                                         <button
                                             onClick={() => setSelectedTransit(transit)}
-                                            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300 text-gray-800"
+                                            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
                                         >
                                             View Details
                                         </button>
@@ -570,7 +597,7 @@ export default function TransitManagement() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {selectedTransit.items?.map((item: any) => (
+                                            {selectedTransit.items?.map((item: TransitItem) => (
                                                 <tr key={item.id} className="hover:bg-gray-50">
                                                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.stock_item?.sku}</td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">{item.quantity}</td>

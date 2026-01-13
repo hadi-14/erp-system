@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from 'next/cache';
-import { compareAndCreateAlerts, storeHistoricalPrice } from './price-alerts';
+import { storeHistoricalPrice } from './price-alerts';
 
 // Types
 export interface CompetitivePricingFilters {
@@ -81,6 +81,65 @@ interface PriceMonitoringConfig {
   competitorSellerIds?: string[];
 }
 
+// Type definitions for Prisma where clauses
+interface CompetitivePricingWhereClause {
+  OR?: Array<{
+    SellerSKU?: { contains: string; mode: 'insensitive' } | { in: string[] } | { notIn: string[] };
+    Product_Identifiers_MarketplaceASIN_ASIN?: { contains: string; mode: 'insensitive' } | { in: string[] } | { notIn: string[] };
+  }>;
+  AND?: Array<{
+    SellerSKU?: { notIn: string[] };
+    Product_Identifiers_MarketplaceASIN_ASIN?: { notIn: string[] };
+  }>;
+  status?: string;
+  Product_Identifiers_MarketplaceASIN_ASIN?: { in: string[] } | { notIn: string[] };
+  SellerSKU?: { in: string[] } | { notIn: string[] };
+}
+
+interface SimpleWhereClause {
+  Product_Identifiers_MarketplaceASIN_ASIN?: string | { in: string[] };
+  SellerSKU?: string | { in: string[] };
+}
+
+// Raw data types from Prisma
+interface RawCompetitivePrice {
+  id: number | bigint;
+  price_amount: number | null;
+  price_currency: string | null;
+  condition: string | null;
+  fulfillment_channel: string | null;
+  belongs_to_requester: boolean | null;
+  shipping_amount: number | bigint | null;
+  shipping_currency: string | null;
+  created_at: Date | null;
+}
+
+interface RawSalesRanking {
+  id: number | bigint;
+  product_category_id: string | null;
+  rank: bigint | null;
+  created_at: Date | null;
+}
+
+interface RawOfferListing {
+  id: number | bigint;
+  condition: string | null;
+  count: bigint | null;
+  created_at: Date | null;
+}
+
+interface RawPricingData {
+  id: number | bigint;
+  SellerSKU: string | null;
+  status: string | null;
+  Product_Identifiers_MarketplaceASIN_ASIN: string | null;
+  created_at: Date | null;
+  updated_at?: Date | null;
+  competitive_prices: RawCompetitivePrice[];
+  sales_rankings: RawSalesRanking[];
+  offer_listings: RawOfferListing[];
+}
+
 // Default configuration
 const defaultConfig: PriceMonitoringConfig = {
   alertThresholdPercent: 0,
@@ -104,7 +163,7 @@ export async function getCompetitivePricingData(
 
     const skip = (page - 1) * limit;
 
-    let whereClause: any = {};
+    const whereClause: CompetitivePricingWhereClause = {};
 
     if (searchTerm) {
       whereClause.OR = [
@@ -129,7 +188,7 @@ export async function getCompetitivePricingData(
 
     if (alertFilter !== 'all') {
       const alertWhereClause = await buildAlertFilterClause(alertFilter);
-      whereClause = { ...whereClause, ...alertWhereClause };
+      Object.assign(whereClause, alertWhereClause);
     }
 
     const total = await prisma.aMZN_competitive_pricing_main.count({
@@ -174,13 +233,13 @@ export async function getCompetitivePricingData(
       sales_rankings: item.sales_rankings.map(ranking => ({
         id: Number(ranking.id),
         product_category_id: ranking.product_category_id,
-        rank: ranking.rank,
+        rank: ranking.rank !== null ? BigInt(ranking.rank) : null,
         created_at: ranking.created_at
       })),
       offer_listings: item.offer_listings.map(offer => ({
         id: Number(offer.id),
         condition: offer.condition,
-        count: offer.count,
+        count: offer.count !== null ? BigInt(offer.count) : null,
         created_at: offer.created_at
       }))
     }));
@@ -202,8 +261,8 @@ export async function getCompetitivePricingData(
   }
 }
 
-async function buildAlertFilterClause(alertFilter: string) {
-  let alertWhereClause: any = {};
+async function buildAlertFilterClause(alertFilter: string): Promise<CompetitivePricingWhereClause> {
+  const alertWhereClause: CompetitivePricingWhereClause = {};
 
   switch (alertFilter) {
     case 'with_alerts': {
@@ -213,7 +272,7 @@ async function buildAlertFilterClause(alertFilter: string) {
       });
 
       const asinsWithAlerts = [...new Set(activeAlertAsinsSku.map(a => a.asin))];
-      const skusWithAlerts = [...new Set(activeAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))];
+      const skusWithAlerts = [...new Set(activeAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))] as string[];
 
       alertWhereClause.OR = [
         { Product_Identifiers_MarketplaceASIN_ASIN: { in: asinsWithAlerts } },
@@ -229,7 +288,7 @@ async function buildAlertFilterClause(alertFilter: string) {
       });
 
       const asinsToExclude = [...new Set(activeAlertAsinsSkuExclude.map(a => a.asin))];
-      const skusToExclude = [...new Set(activeAlertAsinsSkuExclude.map(a => a.seller_sku).filter(Boolean))];
+      const skusToExclude = [...new Set(activeAlertAsinsSkuExclude.map(a => a.seller_sku).filter(Boolean))] as string[];
 
       alertWhereClause.AND = [
         { Product_Identifiers_MarketplaceASIN_ASIN: { notIn: asinsToExclude } },
@@ -248,7 +307,7 @@ async function buildAlertFilterClause(alertFilter: string) {
       });
 
       const criticalAsins = [...new Set(criticalAlertAsinsSku.map(a => a.asin))];
-      const criticalSkus = [...new Set(criticalAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))];
+      const criticalSkus = [...new Set(criticalAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))] as string[];
 
       alertWhereClause.OR = [
         { Product_Identifiers_MarketplaceASIN_ASIN: { in: criticalAsins } },
@@ -267,7 +326,7 @@ async function buildAlertFilterClause(alertFilter: string) {
       });
 
       const highAsins = [...new Set(highAlertAsinsSku.map(a => a.asin))];
-      const highSkus = [...new Set(highAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))];
+      const highSkus = [...new Set(highAlertAsinsSku.map(a => a.seller_sku).filter(Boolean))] as string[];
 
       alertWhereClause.OR = [
         { Product_Identifiers_MarketplaceASIN_ASIN: { in: highAsins } },
@@ -346,7 +405,7 @@ export async function getCompetitionCompetitivePricingData(
 
     const skip = (page - 1) * limit;
 
-    let whereClause: any = {};
+    const whereClause: CompetitivePricingWhereClause = {};
 
     if (searchTerm) {
       whereClause.OR = [
@@ -411,13 +470,13 @@ export async function getCompetitionCompetitivePricingData(
       sales_rankings: item.sales_rankings.map(ranking => ({
         id: Number(ranking.id),
         product_category_id: ranking.product_category_id,
-        rank: ranking.rank,
+        rank: ranking.rank !== null ? BigInt(ranking.rank) : null,
         created_at: ranking.created_at
       })),
       offer_listings: item.offer_listings.map(offer => ({
         id: Number(offer.id),
         condition: offer.condition,
-        count: offer.count,
+        count: offer.count !== null ? BigInt(offer.count) : null,
         created_at: offer.created_at
       }))
     }));
@@ -451,8 +510,8 @@ export async function getRelatedCompetitivePricingData(
       };
     }
 
-    let ourWhereClause: any = {};
-    let competitorWhereClause: any = {};
+    const ourWhereClause: SimpleWhereClause = {};
+    const competitorWhereClause: SimpleWhereClause = {};
 
     if (asin) {
       ourWhereClause.Product_Identifiers_MarketplaceASIN_ASIN = asin;
@@ -484,31 +543,31 @@ export async function getRelatedCompetitivePricingData(
       })
     ]);
 
-    const transformData = (item: any) => ({
+    const transformData = (item: RawPricingData): CompetitivePricingData => ({
       id: Number(item.id),
       SellerSKU: item.SellerSKU,
       status: item.status,
       Product_Identifiers_MarketplaceASIN_ASIN: item.Product_Identifiers_MarketplaceASIN_ASIN,
       created_at: item.created_at,
       updated_at: item.updated_at,
-      competitive_prices: item.competitive_prices.map((price: any) => ({
+      competitive_prices: item.competitive_prices.map((price: RawCompetitivePrice) => ({
         id: Number(price.id),
         price_amount: price.price_amount,
         price_currency: price.price_currency,
         condition: price.condition,
         fulfillment_channel: price.fulfillment_channel,
         belongs_to_requester: price.belongs_to_requester,
-        shipping_amount: price.shipping_amount,
+        shipping_amount: price.shipping_amount !== null ? Number(price.shipping_amount) : null,
         shipping_currency: price.shipping_currency,
         created_at: price.created_at
       })),
-      sales_rankings: item.sales_rankings.map((ranking: any) => ({
+      sales_rankings: item.sales_rankings.map((ranking: RawSalesRanking) => ({
         id: Number(ranking.id),
         product_category_id: ranking.product_category_id,
         rank: ranking.rank,
         created_at: ranking.created_at
       })),
-      offer_listings: item.offer_listings.map((offer: any) => ({
+      offer_listings: item.offer_listings.map((offer: RawOfferListing) => ({
         id: Number(offer.id),
         condition: offer.condition,
         count: offer.count,
@@ -517,8 +576,8 @@ export async function getRelatedCompetitivePricingData(
     });
 
     return {
-      ourData: ourData ? transformData(ourData) : null,
-      competitorData: competitorData.map(transformData)
+      ourData: ourData ? transformData(ourData as RawPricingData) : null,
+      competitorData: competitorData.map(item => transformData(item as RawPricingData))
     };
   } catch (error) {
     console.error('Error fetching related competitive pricing data:', error);
@@ -564,7 +623,7 @@ async function fetchOurProductPrices(
   config: PriceMonitoringConfig
 ): Promise<OurProductPrice[]> {
   try {
-    let whereClause: any = {};
+    const whereClause: SimpleWhereClause = {};
 
     if (config.enabledASINs && config.enabledASINs.length > 0) {
       whereClause.Product_Identifiers_MarketplaceASIN_ASIN = {
@@ -621,7 +680,7 @@ async function fetchCompetitorPricesForComparison(
 
     const skuToCompetitorAsinMap = new Map<string, string[]>();
     const skuToOurAsinMap = new Map<string, string>();
-    
+
     // Build mapping from our SKUs to our ASINs
     ourPrices.forEach(p => {
       if (p.seller_sku) {
@@ -643,7 +702,7 @@ async function fetchCompetitorPricesForComparison(
         skuToCompetitorAsinMap.get(mapping.our_seller_sku)!.push(mapping.competitor_asin);
       }
     }
-    
+
     const competitor_asins = Array.from(skuToCompetitorAsinMap.values()).flat();
 
     console.log(`Found ${competitor_asins.length} competitor ASINs for price comparison`);
@@ -674,7 +733,7 @@ async function fetchCompetitorPricesForComparison(
       if (competitorPrices.length === 0) continue;
 
       const competitorLowestPrice = Math.min(...competitorPrices);
-      const competitorHighestPrice = Math.max(...competitorPrices);
+      // competitorHighestPrice removed as it was unused
 
       // Find matching our product
       const ourProduct = ourPrices.find(
@@ -848,7 +907,7 @@ export async function monitorPricesAndCreateAlerts(
     const priceSuccessful = priceResults.filter((r) => r.status === "fulfilled").length;
     const priceFailed = priceResults.filter((r) => r.status === "rejected").length;
     const priceAlerts = priceResults
-      .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+      .filter((r): r is PromiseFulfilledResult<{ success: boolean; alertCreated: boolean }> => r.status === "fulfilled")
       .filter((r) => r.value.alertCreated).length;
 
     console.log(`Price monitoring completed:`);
@@ -876,7 +935,7 @@ export async function monitorPricesAndCreateAlerts(
 
 async function processRankComparisons(config: PriceMonitoringConfig): Promise<number> {
   try {
-    let whereClause: any = {};
+    const whereClause: SimpleWhereClause = {};
 
     if (config.enabledASINs && config.enabledASINs.length > 0) {
       whereClause.Product_Identifiers_MarketplaceASIN_ASIN = {
@@ -996,26 +1055,18 @@ async function processRankComparisons(config: PriceMonitoringConfig): Promise<nu
         const percentageDifference = (rankDifference / ourBestRank) * 100;
 
         let priority: 'low' | 'medium' | 'high' | 'critical' = 'low';
-        let alertMessage = '';
 
         if (percentageDifference >= 50) {
           priority = 'critical';
-          alertMessage = `Critical: Competitor ranked significantly higher (${competitorBestRank} vs our ${ourBestRank})`;
         } else if (percentageDifference >= 25) {
           priority = 'high';
-          alertMessage = `High: Competitor ranked considerably higher (${competitorBestRank} vs our ${ourBestRank})`;
         } else if (rankDifference >= 10) {
           priority = 'medium';
-          alertMessage = `Medium: Competitor ranked higher (${competitorBestRank} vs our ${ourBestRank})`;
-        } else {
-          priority = 'low';
-          alertMessage = `Low: Competitor ranked slightly higher (${competitorBestRank} vs our ${ourBestRank})`;
         }
 
         // Enhance priority if many competitors are ahead
         if (competitorsAheadCount >= competitorRanks.length * 0.7) {
           priority = priority === 'critical' ? 'critical' : 'high';
-          alertMessage += ` | ${competitorsAheadCount}/${competitorRanks.length} competitors ahead`;
         }
 
         try {

@@ -4,25 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 // Types
-interface PriceAlert {
-  id: bigint;
-  asin: string;
-  seller_sku: string | null;
-  product_name: string | null;
-  old_price: number;
-  new_price: number;
-  price_change: number;
-  price_change_percent: number;
-  currency: string;
-  alert_type: string;
-  competitor_name: string | null;
-  is_read: boolean;
-  priority: string;
-  created_at: Date;
-  threshold_triggered: number | null;
-  is_dismissed: boolean;
-}
-
 interface CreateAlertData {
   asin: string;
   seller_sku?: string;
@@ -34,11 +15,12 @@ interface CreateAlertData {
   threshold_triggered?: number;
 }
 
-interface RankAlertOptions {
-  type: "rank";
-  competitorRank: number;
-  ourRank: number;
-  category?: string;
+// Type for Prisma where clause
+interface AlertWhereClause {
+  is_dismissed: boolean;
+  is_read?: boolean;
+  priority?: { in: string[] };
+  alert_type?: string | { not: string };
 }
 
 // Helper function to calculate alert type and priority
@@ -109,7 +91,7 @@ export async function getPriceAlerts(
   offset = 0
 ) {
   try {
-    let whereClause: any = {
+    const whereClause: AlertWhereClause = {
       is_dismissed: false,
     };
 
@@ -557,7 +539,7 @@ export async function compareAndCreateAlerts(
       orderBy: { recorded_at: "desc" },
     });
 
-    if (!lastPrice) {
+    if (!lastPrice || !lastPrice.price) {
       // No historical data, just store current price
       await storeHistoricalPrice(asin, currentPrice, currency, sellerSku);
       return {

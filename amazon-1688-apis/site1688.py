@@ -66,29 +66,29 @@ if __name__ == "__main__":
     dump_to_sql(df, "1688_orders_cn", startDate=startDate.date(), endDate=endDate.date(), date_col="baseInfo.createTime")
     print(f"[INFO] Inserted {len(df)} rows into Postgres → 1688_orders table")
 
-    # # Get logistics info
-    # query = text("""
-    #     SELECT "baseInfo.id"
-    #     FROM "1688_orders_cn"
-    #     WHERE "baseInfo.createTime" BETWEEN :start_date AND :end_date
-    # """)
+    # Get logistics info
+    query = text("""
+        SELECT "baseInfo.id"
+        FROM "1688_orders_cn"
+        WHERE "baseInfo.createTime" BETWEEN :start_date AND :end_date
+    """)
 
-    # ids = pd.read_sql(query, engine, params={
-    #     "start_date": startDate.date().isoformat(),
-    #     "end_date": endDate.date().isoformat()
-    # })["baseInfo.id"].tolist()
-    # print(f"[INFO] Found {len(ids)} order IDs to fetch logistics info")
-    # print(ids)
-    # df = get_logistics_info(token, ids=ids, website="1688")
+    ids = pd.read_sql(query, engine, params={
+        "start_date": startDate.date().isoformat(),
+        "end_date": endDate.date().isoformat()
+    })["baseInfo.id"].tolist()
+    print(f"[INFO] Found {len(ids)} order IDs to fetch logistics info")
+    print(ids)
+    df = get_logistics_info(token, ids=ids, website="1688")
 
-    # # df['tradeTerms'] = df['tradeTerms'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else {})
-    # # df = df.explode("productItems").reset_index(drop=True)
-    # df = pd.json_normalize(df.to_dict(orient="records"))
-    # # for col in ["baseInfo.createTime", "baseInfo.modifyTime", "baseInfo.payTime", "baseInfo.allDeliveredTime", "baseInfo.completeTime"]:
-    #     # df[col] = pd.to_datetime(df[col], format='%Y%m%d%H%M%S%f%z')
+    # df['tradeTerms'] = df['tradeTerms'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else {})
+    # df = df.explode("productItems").reset_index(drop=True)
+    df = pd.json_normalize(df.to_dict(orient="records"))
+    # for col in ["baseInfo.createTime", "baseInfo.modifyTime", "baseInfo.payTime", "baseInfo.allDeliveredTime", "baseInfo.completeTime"]:
+        # df[col] = pd.to_datetime(df[col], format='%Y%m%d%H%M%S%f%z')
     
-    # dump_to_sql(df, "1688_logistics_info_cn", ids_col="logisticsId")
-    # print(f"[INFO] Inserted {len(df)} rows into Postgres → 1688_orders table")
+    dump_to_sql(df, "1688_logistics_info_cn", ids_col="logisticsId")
+    print(f"[INFO] Inserted {len(df)} rows into Postgres → 1688_orders table")
 
 
 

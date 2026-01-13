@@ -16,8 +16,8 @@ from sp_api.util import throttle_retry, load_all_pages
 from config import dump_to_sql, engine
 # ===== DATE RANGE =====
 MARKET_PLACE = Marketplaces.AE
-startDate = date(2025, 1, 1)
-# startDate = date(2025, 11, 1)   
+# startDate = date(2025, 1, 1)
+startDate = date.today() - timedelta(days=30)  
 endDate = date.today()
 # endDate = date(2024, 7, 1)
 
@@ -436,7 +436,353 @@ def save_competitive_pricing_data(processed_data, prefix=""):
                 print(f"✅ {table_name.replace('_', ' ').title()} data saved: {len(df_copy)} records")
             else:
                 print(f"⚠️  No {table_name} data to save after ID mapping")
+
+
+def get_processed_orders():
+    """Get orders that have already been processed for stock deduction."""
+    try:
+        # Try to read existing processed orders
+        df = pd.read_sql_table("processed_orders", con=engine)
+        processed = set(df['amazon_order_id'].astype(str).tolist())
+        print(f"✅ Found existing processed_orders table with {len(processed)} records")
+        return processed
+    except Exception as e:
+        print(f"⚠️  processed_orders table doesn't exist yet ({str(e).__class__.__name__})")
+        # Table doesn't exist yet, return empty set and create it
+        return set()
+
+
+def process_and_deduct_stock():
+    """
+    Fetch orders from GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL,
+    deduct stock from stock_items, and track processed orders.
+    """
+    
+    # Get orders data
+    print("📦 Fetching orders from AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL...")
+    try:
+        orders_df = pd.read_sql_table(
+            "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL",
+            con=engine
+        )
+    except Exception as e:
+        print(f"❌ Error reading orders table: {e}")
+        return
+    
+    if orders_df.empty:
+        print("❌ No orders found")
+        return
+    
+    print(f"✅ Retrieved {len(orders_df)} total order records")
+    
+    # Print available columns for debugging
+    print(f"📋 Available columns: {orders_df.columns.tolist()}")
+    
+    # Get the actual column names (they may have hyphens)
+    amazon_order_col = 'amazon-order-id' if 'amazon-order-id' in orders_df.columns else 'amazon_order_id'
+    sku_col = 'sku' if 'sku' in orders_df.columns else None
+    quantity_col = 'quantity' if 'quantity' in orders_df.columns else None
+    
+    if amazon_order_col not in orders_df.columns:
+        print(f"❌ Order ID column not found. Available: {orders_df.columns.tolist()}")
+        return
+    
+    if sku_col not in orders_df.columns or quantity_col not in orders_df.columns:
+        print(f"❌ SKU or quantity column not found. Available: {orders_df.columns.tolist()}")
+        return
+    
+    # Get already processed orders
+    processed_orders = get_processed_orders()
+    print(f"📊 Found {len(processed_orders)} previously processed orders")
+    
+    # Filter to only unprocessed orders
+    orders_df[amazon_order_col] = orders_df[amazon_order_col].astype(str)
+    new_orders_df = orders_df[~orders_df[amazon_order_col].isin(processed_orders)].copy()
+    
+    if new_orders_df.empty:
+        print("✅ No new orders to process")
+        return
+    
+    print(f"📋 Processing {len(new_orders_df)} new orders")
+    
+    # Group by SKU to aggregate quantities
+    sku_quantities = new_orders_df.groupby(sku_col)[quantity_col].sum().reset_index()
+    sku_quantities.columns = ['sku', 'total_quantity']
+    
+    print(f"🔍 Found {len(sku_quantities)} unique SKUs to deduct")
+    
+    # Deduct stock for each SKU
+    deducted_count = 0
+    failed_skus = []
+    movements_data = []
+    
+    try:
+        # Read current stock items
+        stock_df = pd.read_sql_table("stock_items", con=engine) 
+        stock_df_original = stock_df.copy()
+        
+        for idx, row in sku_quantities.iterrows():
+            sku = row['sku']
+            quantity_to_deduct = int(row['total_quantity'])
+            
+            if pd.isna(sku) or quantity_to_deduct <= 0:
+                continue
+            
+            # Find stock item by SKU
+            stock_match = stock_df[stock_df['sku'] == sku]
+            
+            if stock_match.empty:
+                failed_skus.append((sku, f"SKU not found in stock_items"))
+                continue
+            
+            stock_idx = stock_match.index[0]
+            stock_id = stock_df.loc[stock_idx, 'id']
+            available_qty = stock_df.loc[stock_idx, 'available_quantity']
+            
+            # Deduct whatever is available (partial deduction allowed)
+            actual_deduct = min(available_qty, quantity_to_deduct)
+            
+            if actual_deduct > 0:
+                # Update quantities
+                stock_df.loc[stock_idx, 'available_quantity'] -= actual_deduct
+                stock_df.loc[stock_idx, 'quantity'] -= actual_deduct
+                stock_df.loc[stock_idx, 'updated_at'] = datetime.now()
                 
+                # Record movement
+                movements_data.append({
+                    'stock_item_id': stock_id,
+                    'movement_type': 'SALE',
+                    'quantity': actual_deduct,
+                    'reason': 'Deducted from orders',
+                    'reference_id': f"order_deduction_{datetime.now().timestamp()}",
+                    'created_at': datetime.now()
+                })
+                
+                deducted_count += 1
+                
+                # Check if partial deduction
+                if actual_deduct < quantity_to_deduct:
+                    shortage = quantity_to_deduct - actual_deduct
+                    print(f"⚠️  {sku}: Partial deduction {actual_deduct}/{quantity_to_deduct} units (Shortage: {shortage})")
+                    failed_skus.append((sku, f"Partial deduction: {actual_deduct}/{quantity_to_deduct} (Shortage: {shortage})"))
+                else:
+                    print(f"✅ {sku}: Deducted {actual_deduct} units (Available: {available_qty} → 0)")
+            else:
+                failed_skus.append((sku, f"No stock available"))
+                print(f"❌ {sku}: No stock available")
+        
+        # Save updated stock items
+        if not stock_df.equals(stock_df_original):
+            dump_to_sql(stock_df, "stock_items", safe_drop=False)
+            print(f"✅ Stock items updated in database")
+        
+        # Save movements
+        if movements_data:
+            movements_df = pd.DataFrame(movements_data)
+            dump_to_sql(movements_df, "stock_movements", safe_drop=False)
+            print(f"✅ {len(movements_data)} stock movements recorded")
+    
+    except Exception as e:
+        print(f"❌ Error during stock deduction: {e}")
+        import traceback
+        traceback.print_exc()
+        return
+    
+    # Track processed orders
+    processed_order_ids = new_orders_df[[amazon_order_col]].drop_duplicates()
+    processed_order_ids.columns = ['amazon_order_id']
+    processed_order_ids['processed_at'] = datetime.now()
+    
+    try:
+        # Check if table exists
+        try:
+            existing_processed = get_processed_orders()
+            if existing_processed:
+                # Append to existing records
+                existing_df = pd.read_sql_table("processed_orders", con=engine)
+                combined_df = pd.concat([existing_df, processed_order_ids], ignore_index=True)
+                combined_df = combined_df.drop_duplicates(subset=['amazon_order_id'])
+                dump_to_sql(combined_df, "processed_orders", safe_drop=True)
+            else:
+                # Create new table
+                dump_to_sql(processed_order_ids, "processed_orders", safe_drop=True)
+        except:
+            # Table doesn't exist, create it
+            dump_to_sql(processed_order_ids, "processed_orders", safe_drop=False)
+        
+        print(f"✅ Tracked {len(processed_order_ids)} new processed orders")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not track processed orders: {e}")
+    
+    # Summary
+    print("\n" + "="*80)
+    print("📊 STOCK DEDUCTION SUMMARY")
+    print("="*80)
+    print(f"Total new orders processed: {len(new_orders_df)}")
+    print(f"Unique SKUs processed: {len(sku_quantities)}")
+    print(f"Successfully deducted: {deducted_count} SKUs")
+    print(f"Failed/Insufficient: {len(failed_skus)} SKUs")
+    
+    if failed_skus:
+        print("\n⚠️  Failed SKUs:")
+        for sku, reason in failed_skus:
+            print(f"  - {sku}: {reason}")
+    
+    print("="*80)
+
+# TODO: "Product.Identifiers.MarketplaceASIN.ASIN" drop where null
+def get_competitive_prices():
+    """Fetch and process competitive pricing data for SKUs and competitor ASINs."""
+    # Get SKUs from existing data
+    skus = pd.read_sql_table(
+        "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", 
+        con=engine, 
+        columns=['sku']
+    )['sku'].unique().tolist()
+    # skus = ['B07ZG5NTPJ']
+    
+    df = pd.DataFrame()
+    print(f"Total unique SKUs to process: {len(skus)}")
+    
+    # Process SKUs in batches of 20
+    for sku_start in range(0, len(skus), 20):
+        skus_batch = skus[sku_start:sku_start+20]
+        print(f"Processing batch {sku_start//20 + 1}: {len(skus_batch)} SKUs")
+
+        try:
+            # Get competitive pricing data
+            req = get_competitive_pricing_for_skus(skus_batch)
+            # print(req)
+            batch_df = pd.json_normalize(req.payload)
+            df = pd.concat([df, batch_df], ignore_index=True)
+            print(f"Retrieved data for {len(batch_df)} products")            
+        except Exception as e:
+            print(f"Error processing batch {sku_start//20 + 1}: {str(e)}")
+            continue
+
+    if not df.empty:
+        # Process the data into separate normalized tables
+        processed_data = process_competitive_pricing_data(df)
+        
+        # Save to database following Prisma schema
+        save_competitive_pricing_data(processed_data)
+        
+        print("\n" + "="*80)
+        print("✅ COMPETITIVE PRICING DATA PROCESSING COMPLETE")
+        print("="*80)
+        print(f"Main table records: {len(processed_data['main'])}")
+        print(f"Sales rankings records: {len(processed_data['sales_rankings'])}")
+        print(f"Offer listings records: {len(processed_data['offer_listings'])}")
+        print(f"Competitive prices records: {len(processed_data['competitive_prices'])}")
+        print("="*80)
+        
+    else:
+        print("❌ No competitive pricing data retrieved")
+
+
+    # Get competitor ASINs from the mapping table
+    try:
+        competitor_mappings_df = pd.read_sql_table(
+            "competitor_product_mappings", 
+            con=engine,
+            columns=['competitor_asin', 'our_seller_sku', 'is_active']
+        )
+        
+        # Filter only active mappings
+        active_mappings = competitor_mappings_df[competitor_mappings_df['is_active'] == True]
+        competitor_asins = active_mappings['competitor_asin'].unique().tolist()
+        
+        print(f"Total active competitor mappings found: {len(active_mappings)}")
+        print(f"Total unique competitor ASINs to process: {len(competitor_asins)}")
+        
+    except Exception as e:
+        print(f"Warning: Could not load competitor mappings table: {str(e)}")
+        print("Using fallback ASINs from existing competitive pricing data...")
+        
+        # Fallback: Get ASINs from existing competitive pricing data
+        try:
+            existing_cp_df = pd.read_sql_table(
+                "AMZN_competitive_pricing_main", 
+                con=engine,
+                columns=['Product_Identifiers_MarketplaceASIN_ASIN']
+            )
+            competitor_asins = existing_cp_df['Product_Identifiers_MarketplaceASIN_ASIN'].dropna().unique().tolist()[:100]  # Limit to 100 for testing
+            print(f"Using {len(competitor_asins)} ASINs from existing competitive pricing data")
+        except:
+            print("❌ Could not load competitor ASINs. Skipping ASIN-based competitive pricing.")
+            competitor_asins = []
+            
+    # print(competitor_asins[:10])  # Print first 10 ASINs for verification
+    if competitor_asins:
+        competitor_df = pd.DataFrame()
+        
+        # Process competitor ASINs in batches of 20 (Amazon API limit)
+        for asin_start in range(0, len(competitor_asins), 20):
+            asins_batch = competitor_asins[asin_start:asin_start+20]
+            print(f"Processing competitor ASIN batch {asin_start//20 + 1}: {len(asins_batch)} ASINs")
+
+            try:
+                # Get competitive pricing data for competitor ASINs
+                req = get_competitive_pricing_for_asins(asins_batch)
+                # print(f"API Response Status: {req}")
+                batch_df = pd.json_normalize(req.payload)
+                competitor_df = pd.concat([competitor_df, batch_df], ignore_index=True)
+                print(f"Retrieved competitor data for {len(batch_df)} products")
+                
+                # Add a small delay to avoid rate limiting
+                time.sleep(2)
+                
+            except Exception as e:
+                print(f"Error processing competitor ASIN batch {asin_start//20 + 1}: {str(e)}")
+                continue
+        
+        # print(competitor_df)
+        if not competitor_df.empty:
+            # Process the competitor ASIN data into separate normalized tables
+            competitor_processed_data = process_competitive_pricing_data(competitor_df)
+            
+            # Update competitor mapping table with last check timestamp
+            try:
+                update_query = """
+                UPDATE competitor_product_mappings 
+                SET last_price_check = %s 
+                WHERE competitor_asin IN %s AND is_active = TRUE
+                """
+                
+                with engine.connect() as conn:
+                    conn.execute(
+                        update_query, 
+                        (datetime.now(), tuple(competitor_asins[:len(competitor_df)]))
+                    )
+                    conn.commit()
+                print("✅ Updated competitor mapping timestamps")
+                
+            except Exception as e:
+                print(f"Warning: Could not update mapping timestamps: {str(e)}")
+            
+            # Save to database following Prisma schema
+            save_competitive_pricing_data(competitor_processed_data, prefix="_competitors")
+            
+            print("\n" + "="*80)
+            print("✅ COMPETITOR ASIN-BASED COMPETITIVE PRICING DATA PROCESSING COMPLETE")
+            print("="*80)
+            print(f"Competitor main table records: {len(competitor_processed_data['main'])}")
+            print(f"Competitor sales rankings records: {len(competitor_processed_data['sales_rankings'])}")
+            print(f"Competitor offer listings records: {len(competitor_processed_data['offer_listings'])}")
+            print(f"Competitor competitive prices records: {len(competitor_processed_data['competitive_prices'])}")
+            print("="*80)
+            
+        else:
+            print("❌ No competitor ASIN competitive pricing data retrieved")
+    
+    else:
+        print("❌ No competitor ASINs found to process")
+    
+    print("\n" + "="*80)
+    print("🎉 ALL COMPETITIVE PRICING PROCESSING COMPLETE")
+    print("="*80)
+    
+    
 # ===== MAIN RUN =====
 if __name__ == "__main__":
     
@@ -444,162 +790,8 @@ if __name__ == "__main__":
     df['purchase-date'] = pd.to_datetime(df['purchase-date'])
     df['last-updated-date'] = pd.to_datetime(df['last-updated-date'])
     dump_to_sql(df, "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", date_col="purchase-date")
-
-        
-    # TODO: "Product.Identifiers.MarketplaceASIN.ASIN" drop where null
-    def get_competitive_prices():
-        """Fetch and process competitive pricing data for SKUs and competitor ASINs."""
-        # Get SKUs from existing data
-        skus = pd.read_sql_table(
-            "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", 
-            con=engine, 
-            columns=['sku']
-        )['sku'].unique().tolist()
-        # skus = ['B07ZG5NTPJ']
-        
-        df = pd.DataFrame()
-        print(f"Total unique SKUs to process: {len(skus)}")
-        
-        # Process SKUs in batches of 20
-        for sku_start in range(0, len(skus), 20):
-            skus_batch = skus[sku_start:sku_start+20]
-            print(f"Processing batch {sku_start//20 + 1}: {len(skus_batch)} SKUs")
-
-            try:
-                # Get competitive pricing data
-                req = get_competitive_pricing_for_skus(skus_batch)
-                # print(req)
-                batch_df = pd.json_normalize(req.payload)
-                df = pd.concat([df, batch_df], ignore_index=True)
-                print(f"Retrieved data for {len(batch_df)} products")            
-            except Exception as e:
-                print(f"Error processing batch {sku_start//20 + 1}: {str(e)}")
-                continue
-
-        if not df.empty:
-            # Process the data into separate normalized tables
-            processed_data = process_competitive_pricing_data(df)
-            
-            # Save to database following Prisma schema
-            save_competitive_pricing_data(processed_data)
-            
-            print("\n" + "="*80)
-            print("✅ COMPETITIVE PRICING DATA PROCESSING COMPLETE")
-            print("="*80)
-            print(f"Main table records: {len(processed_data['main'])}")
-            print(f"Sales rankings records: {len(processed_data['sales_rankings'])}")
-            print(f"Offer listings records: {len(processed_data['offer_listings'])}")
-            print(f"Competitive prices records: {len(processed_data['competitive_prices'])}")
-            print("="*80)
-            
-        else:
-            print("❌ No competitive pricing data retrieved")
-
-
-        # Get competitor ASINs from the mapping table
-        try:
-            competitor_mappings_df = pd.read_sql_table(
-                "competitor_product_mappings", 
-                con=engine,
-                columns=['competitor_asin', 'our_seller_sku', 'is_active']
-            )
-            
-            # Filter only active mappings
-            active_mappings = competitor_mappings_df[competitor_mappings_df['is_active'] == True]
-            competitor_asins = active_mappings['competitor_asin'].unique().tolist()
-            
-            print(f"Total active competitor mappings found: {len(active_mappings)}")
-            print(f"Total unique competitor ASINs to process: {len(competitor_asins)}")
-            
-        except Exception as e:
-            print(f"Warning: Could not load competitor mappings table: {str(e)}")
-            print("Using fallback ASINs from existing competitive pricing data...")
-            
-            # Fallback: Get ASINs from existing competitive pricing data
-            try:
-                existing_cp_df = pd.read_sql_table(
-                    "AMZN_competitive_pricing_main", 
-                    con=engine,
-                    columns=['Product_Identifiers_MarketplaceASIN_ASIN']
-                )
-                competitor_asins = existing_cp_df['Product_Identifiers_MarketplaceASIN_ASIN'].dropna().unique().tolist()[:100]  # Limit to 100 for testing
-                print(f"Using {len(competitor_asins)} ASINs from existing competitive pricing data")
-            except:
-                print("❌ Could not load competitor ASINs. Skipping ASIN-based competitive pricing.")
-                competitor_asins = []
-                
-        # print(competitor_asins[:10])  # Print first 10 ASINs for verification
-        if competitor_asins:
-            competitor_df = pd.DataFrame()
-            
-            # Process competitor ASINs in batches of 20 (Amazon API limit)
-            for asin_start in range(0, len(competitor_asins), 20):
-                asins_batch = competitor_asins[asin_start:asin_start+20]
-                print(f"Processing competitor ASIN batch {asin_start//20 + 1}: {len(asins_batch)} ASINs")
-
-                try:
-                    # Get competitive pricing data for competitor ASINs
-                    req = get_competitive_pricing_for_asins(asins_batch)
-                    # print(f"API Response Status: {req}")
-                    batch_df = pd.json_normalize(req.payload)
-                    competitor_df = pd.concat([competitor_df, batch_df], ignore_index=True)
-                    print(f"Retrieved competitor data for {len(batch_df)} products")
-                    
-                    # Add a small delay to avoid rate limiting
-                    time.sleep(2)
-                    
-                except Exception as e:
-                    print(f"Error processing competitor ASIN batch {asin_start//20 + 1}: {str(e)}")
-                    continue
-            
-            # print(competitor_df)
-            if not competitor_df.empty:
-                # Process the competitor ASIN data into separate normalized tables
-                competitor_processed_data = process_competitive_pricing_data(competitor_df)
-                
-                # Update competitor mapping table with last check timestamp
-                try:
-                    update_query = """
-                    UPDATE competitor_product_mappings 
-                    SET last_price_check = %s 
-                    WHERE competitor_asin IN %s AND is_active = TRUE
-                    """
-                    
-                    with engine.connect() as conn:
-                        conn.execute(
-                            update_query, 
-                            (datetime.now(), tuple(competitor_asins[:len(competitor_df)]))
-                        )
-                        conn.commit()
-                    print("✅ Updated competitor mapping timestamps")
-                    
-                except Exception as e:
-                    print(f"Warning: Could not update mapping timestamps: {str(e)}")
-                
-                # Save to database following Prisma schema
-                save_competitive_pricing_data(competitor_processed_data, prefix="_competitors")
-                
-                print("\n" + "="*80)
-                print("✅ COMPETITOR ASIN-BASED COMPETITIVE PRICING DATA PROCESSING COMPLETE")
-                print("="*80)
-                print(f"Competitor main table records: {len(competitor_processed_data['main'])}")
-                print(f"Competitor sales rankings records: {len(competitor_processed_data['sales_rankings'])}")
-                print(f"Competitor offer listings records: {len(competitor_processed_data['offer_listings'])}")
-                print(f"Competitor competitive prices records: {len(competitor_processed_data['competitive_prices'])}")
-                print("="*80)
-                
-            else:
-                print("❌ No competitor ASIN competitive pricing data retrieved")
-        
-        else:
-            print("❌ No competitor ASINs found to process")
-        
-        print("\n" + "="*80)
-        print("🎉 ALL COMPETITIVE PRICING PROCESSING COMPLETE")
-        print("="*80)
-        
-    get_competitive_prices()
-        
+    
+    process_and_deduct_stock()       
     
     
     # orders_df = get_orders(startDate, endDate)
@@ -625,8 +817,44 @@ if __name__ == "__main__":
     df['open-date'] = pd.to_datetime(df['open-date'])
     dump_to_sql(df, "AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", date_col="open-date")
 
+    # === Amazon ===
+    df = pd.read_sql_table("AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", engine)
+    # Select product-related columns
+    product_cols = [
+        "listing-id",
+        "item-name",
+        "item-description",
+        "seller-sku",
+        "price",
+        "quantity",
+        "open-date",
+        "image-url",
+        "item-is-marketplace",
+        "product-id",
+        "product-id-type",
+        "asin1",
+        "asin2",
+        "asin3",
+        "item-condition",
+        "zshop-category1",
+        "zshop-browse-path",
+        "zshop-storefront-feature",
+        "will-ship-internationally",
+        "expedited-shipping",
+        "fulfillment-channel",
+        "status"
+    ]
 
 
+    products_df = df[product_cols]
+    products_df = products_df.drop_duplicates()
+    products_df = products_df.drop_duplicates(subset=["listing-id"])
+    products_df.reset_index(drop=True, inplace=True)
+    dump_to_sql(products_df, "AMZN_PRODUCT_LIST", safe_drop=True)
+
+    get_competitive_prices()
+    
+    
     # No Data
     # df = get_bulk_reports("GET_EASYSHIP_DOCUMENTS", startDate, endDate)
     # dump_to_sql(df, "AMZN_GET_EASYSHIP_DOCUMENTS", date_col="last-updated-date")

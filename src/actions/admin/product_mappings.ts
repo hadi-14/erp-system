@@ -35,7 +35,7 @@ export async function deleteMapping(id: number) {
     await prisma.order_mappings.delete({
       where: { id },
     });
-  
+
     return { success: true, id };
   } catch (error) {
     return { success: false, message: error };
@@ -50,7 +50,7 @@ export async function editMapping(id: number, data: order_mappings) {
         ...data
       }
     });
-  
+
     return { success: true, id };
   } catch (error) {
     return { success: false, message: error };
@@ -58,7 +58,7 @@ export async function editMapping(id: number, data: order_mappings) {
 }
 
 // ===== CREATE MAPPING =====
-export async function createMapping(data: order_mappings) {
+export async function createMapping(data: Omit<order_mappings, 'id'>) {
   try {
     const mapping = await prisma.order_mappings.create({
       data: { ...data },

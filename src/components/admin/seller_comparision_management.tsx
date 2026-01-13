@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useTransition, useEffect } from 'react';
+import React, { useState, useTransition, useEffect, useCallback } from 'react';
 import {
   Search,
   Link,
@@ -10,17 +10,13 @@ import {
   Target,
   ExternalLink,
   ArrowRight,
-  Star,
   X,
   Award,
-  Users,
-  Zap,
   Loader,
   Eye,
   Plus,
   Trash2,
   MapPin,
-  Filter,
   ChevronDown,
   ChevronUp,
   Upload,
@@ -34,25 +30,58 @@ import {
   createCompetitorMapping,
   getCompetitorMappingData,
   deleteCompetitorMapping,
-  toggleMappingStatus
+  toggleMappingStatus,
+  CompetitorMappingData
 } from '@/actions/admin/competitive_pricing';
 import { extractOrValidateAsin } from '@/lib/asin';
+
+interface AvailableProduct {
+  seller_sku: string;
+  asin: string | null;
+  product_name: string;
+}
+
+interface CompetitorDetailsType {
+  asin: string;
+  displayTitle: string;
+}
+
+interface BulkUploadRecord {
+  seller_sku: string;
+  competitor_url_or_asin: string;
+  mapping_reason: string;
+  mapping_notes: string;
+  mapping_priority: number;
+  row_number: number;
+}
+
+interface BulkUploadError {
+  row: number;
+  seller_sku: string;
+  error: string;
+}
+
+interface BulkUploadResults {
+  successful: BulkUploadRecord[];
+  failed: BulkUploadError[];
+  total: number;
+}
 
 const AdminCompetitorAnalysisPage = () => {
   // State for ASIN extraction
   const [asinInput, setAsinInput] = useState('');
-  const [extractedAsin, setExtractedAsin] = useState(null);
-  const [extractionError, setExtractionError] = useState(null);
+  const [extractedAsin, setExtractedAsin] = useState<string | null>(null);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
 
   // State for product search and comparison
   const [ourProductSearch, setOurProductSearch] = useState('');
-  const [availableProducts, setAvailableProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<AvailableProduct | null>(null);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // State for competitor product details (minimal - just for display)
-  const [competitorDetails, setCompetitorDetails] = useState(null);
+  const [competitorDetails, setCompetitorDetails] = useState<CompetitorDetailsType | null>(null);
 
   // State for mapping creation
   const [mappingData, setMappingData] = useState({
@@ -63,14 +92,14 @@ const AdminCompetitorAnalysisPage = () => {
 
   // State for bulk upload
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [bulkUploadFile, setBulkUploadFile] = useState(null);
-  const [bulkUploadData, setBulkUploadData] = useState([]);
-  const [bulkUploadResults, setBulkUploadResults] = useState(null);
+  const [bulkUploadFile, setBulkUploadFile] = useState<File | null>(null);
+  const [bulkUploadData, setBulkUploadData] = useState<BulkUploadRecord[]>([]);
+  const [bulkUploadResults, setBulkUploadResults] = useState<BulkUploadResults | null>(null);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-  const [bulkUploadErrors, setBulkUploadErrors] = useState([]);
+  const [bulkUploadErrors, setBulkUploadErrors] = useState<BulkUploadError[]>([]);
 
   // State for existing relations display
-  const [existingMappings, setExistingMappings] = useState([]);
+  const [existingMappings, setExistingMappings] = useState<CompetitorMappingData[]>([]);
   const [mappingsPagination, setMappingsPagination] = useState({
     page: 1,
     limit: 10,
@@ -84,50 +113,11 @@ const AdminCompetitorAnalysisPage = () => {
   const [mappingsActiveFilter, setMappingsActiveFilter] = useState('all');
 
   const [isPending, startTransition] = useTransition();
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load existing mappings when component mounts and when filters change
-  useEffect(() => {
-    if (showExistingMappings) {
-      loadExistingMappings();
-    }
-  }, [showExistingMappings, mappingsSearchTerm, mappingsPriorityFilter, mappingsActiveFilter, mappingsPagination.page]);
-
-  // Handle ASIN extraction
-  const handleAsinExtraction = async () => {
-    if (!asinInput.trim()) {
-      setExtractionError('Please enter an ASIN or Amazon URL');
-      return;
-    }
-
-    setIsExtracting(true);
-    setExtractionError(null);
-    setExtractedAsin(null);
-
-    try {
-      const result = await extractOrValidateAsin(asinInput.trim());
-
-      if (result.success) {
-        setExtractedAsin(result.asin);
-        // Set minimal competitor details just for display purposes
-        setCompetitorDetails({
-          asin: result.asin,
-          displayTitle: `Product ${result.asin}` // Minimal display info
-        });
-      } else {
-        setExtractionError(result.message);
-      }
-    } catch (err) {
-      setExtractionError('Error processing ASIN input');
-      console.error('ASIN extraction error:', err);
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  // Load existing mappings
-  const loadExistingMappings = async () => {
+  const loadExistingMappings = useCallback(async () => {
     try {
       setMappingsLoading(true);
 
@@ -148,10 +138,50 @@ const AdminCompetitorAnalysisPage = () => {
     } finally {
       setMappingsLoading(false);
     }
+  }, [mappingsSearchTerm, mappingsPriorityFilter, mappingsActiveFilter, mappingsPagination.page, mappingsPagination.limit]);
+
+  useEffect(() => {
+    if (showExistingMappings) {
+      loadExistingMappings();
+    }
+  }, [showExistingMappings, loadExistingMappings]);
+
+  // Handle ASIN extraction
+  const handleAsinExtraction = async (): Promise<void> => {
+    if (!asinInput.trim()) {
+      setExtractionError('Please enter an ASIN or Amazon URL');
+      return;
+    }
+
+    setIsExtracting(true);
+    setExtractionError(null);
+    setExtractedAsin(null);
+
+    try {
+      const result = await extractOrValidateAsin(asinInput.trim());
+
+      if (result.success && result.asin) {
+        setExtractedAsin(result.asin);
+        // Set minimal competitor details just for display purposes
+        setCompetitorDetails({
+          asin: result.asin,
+          displayTitle: `Product ${result.asin}` // Minimal display info
+        } as CompetitorDetailsType);
+      } else {
+        setExtractionError(result.message);
+      }
+    } catch (err) {
+      setExtractionError('Error processing ASIN input');
+      console.error('ASIN extraction error:', err);
+    } finally {
+      setIsExtracting(false);
+    }
   };
 
+
+
   // Load our products for comparison
-  const loadOurProducts = async () => {
+  const loadOurProducts = async (): Promise<void> => {
     if (!ourProductSearch.trim()) {
       setAvailableProducts([]);
       return;
@@ -170,13 +200,13 @@ const AdminCompetitorAnalysisPage = () => {
   };
 
   // Handle product selection 
-  const handleProductSelect = (product) => {
+  const handleProductSelect = (product: AvailableProduct): void => {
     setSelectedProduct(product);
     setOurProductSearch('');
     setAvailableProducts([]);
   };
 
-  const fetchCompetitorData = async (asin, mappingId = null) => {
+  const fetchCompetitorData = async (asin: string, mappingId: number | null = null): Promise<{ success: boolean; data_fetched?: boolean; records_saved?: { main: number; competitive_prices: number }; message?: string }> => {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/fetch-competitor-data', {
         method: 'POST',
@@ -198,12 +228,13 @@ const AdminCompetitorAnalysisPage = () => {
       return result;
     } catch (error) {
       console.error('Error fetching competitor data:', error);
-      throw new Error('Failed to fetch competitor data: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error('Failed to fetch competitor data: ' + errorMessage);
     }
   };
 
   // Fetch competitor data for multiple ASINs (bulk)
-  const fetchMultipleCompetitorData = async (asins) => {
+  const fetchMultipleCompetitorData = async (asins: string[]): Promise<{ success: boolean; data_fetched: boolean; records_saved?: { main: number; competitive_prices: number }; message?: string }> => {
     try {
       const response = await fetch('http://127.0.0.1:5000/api/fetch-multiple-competitor-data', {
         method: 'POST',
@@ -225,7 +256,8 @@ const AdminCompetitorAnalysisPage = () => {
       return result;
     } catch (error) {
       console.error('Error fetching multiple competitor data:', error);
-      throw new Error('Failed to fetch competitor data: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error('Failed to fetch competitor data: ' + errorMessage);
     }
   };
 
@@ -240,9 +272,9 @@ const AdminCompetitorAnalysisPage = () => {
       try {
         const result = await createCompetitorMapping({
           our_seller_sku: selectedProduct.seller_sku,
-          our_asin: selectedProduct.asin,
+          our_asin: selectedProduct.asin ?? undefined,
           our_product_name: selectedProduct.product_name,
-          competitor_asin: extractedAsin,
+          competitor_asin: extractedAsin ?? '',
           mapping_reason: mappingData.mapping_reason,
           mapping_notes: mappingData.mapping_notes,
           mapping_priority: mappingData.mapping_priority
@@ -254,7 +286,7 @@ const AdminCompetitorAnalysisPage = () => {
             const fetchResult = await fetchCompetitorData(extractedAsin);
 
             if (fetchResult.success) {
-              if (fetchResult.data_fetched) {
+              if (fetchResult.data_fetched && fetchResult.records_saved) {
                 setSuccessMessage(
                   `Competitor mapping created and data fetched successfully! ` +
                   `Saved ${fetchResult.records_saved.main} main records, ` +
@@ -302,8 +334,8 @@ const AdminCompetitorAnalysisPage = () => {
   };
 
   // Handle bulk upload file change
-  const handleBulkUploadFile = (event) => {
-    const file = event.target.files[0];
+  const handleBulkUploadFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0];
     if (file) {
       if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
         setError('Please upload a CSV file');
@@ -315,7 +347,7 @@ const AdminCompetitorAnalysisPage = () => {
   };
 
   // Parse CSV file for bulk upload
-  const parseBulkUploadFile = async (file) => {
+  const parseBulkUploadFile = async (file: File): Promise<void> => {
     try {
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
@@ -326,7 +358,7 @@ const AdminCompetitorAnalysisPage = () => {
         return;
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const headers = lines[0].split(',').map((h: string) => h.trim().toLowerCase());
       const requiredHeaders = ['seller_sku', 'competitor_url_or_asin'];
 
       console.debug('CSV Headers:', headers);
@@ -340,15 +372,15 @@ const AdminCompetitorAnalysisPage = () => {
         return;
       }
 
-      const data = [];
-      const errors = [];
+      const data: BulkUploadRecord[] = [];
+      const errors: BulkUploadError[] = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = lines[i].split(',').map((v: string) => v.trim());
         if (values.length < headers.length) continue;
 
-        const row = {};
-        headers.forEach((header, index) => {
+        const row: Record<string, string> = {};
+        headers.forEach((header: string, index: number): void => {
           row[header] = values[index] || '';
         });
 
@@ -357,7 +389,11 @@ const AdminCompetitorAnalysisPage = () => {
         const competitorValue = row['competitor_url_or_asin'] || row['competitorurlorasin'] || row['competitor_asin'] || row['competitor_url'];
 
         if (!sellerSku || !competitorValue) {
-          errors.push(`Row ${i + 1}: Missing seller_sku or competitor_url_or_asin`);
+          errors.push({
+            row: i + 1,
+            seller_sku: sellerSku || 'Unknown',
+            error: 'Missing seller_sku or competitor_url_or_asin'
+          });
           continue;
         }
 
@@ -368,7 +404,7 @@ const AdminCompetitorAnalysisPage = () => {
           mapping_notes: row['mapping_notes'] || row['notes'] || '',
           mapping_priority: parseInt(row['mapping_priority'] || row['priority'] || '2'),
           row_number: i + 1
-        });
+        } as BulkUploadRecord);
       }
 
       setBulkUploadData(data);
@@ -378,13 +414,14 @@ const AdminCompetitorAnalysisPage = () => {
         setError('No valid data rows found in CSV file');
       }
     } catch (err) {
-      setError('Error parsing CSV file: ' + err.message);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error parsing CSV file: ' + errorMsg);
       console.error('CSV parsing error:', err);
     }
   };
 
   // Process bulk upload
-  const handleBulkUpload = async () => {
+  const handleBulkUpload = async (): Promise<void> => {
     if (bulkUploadData.length === 0) {
       setError('No data to upload');
       return;
@@ -393,7 +430,7 @@ const AdminCompetitorAnalysisPage = () => {
     setIsBulkProcessing(true);
     setBulkUploadResults(null);
 
-    const results = {
+    const results: BulkUploadResults = {
       successful: [],
       failed: [],
       total: bulkUploadData.length
@@ -432,9 +469,9 @@ const AdminCompetitorAnalysisPage = () => {
           // Create the mapping
           const mappingResult = await createCompetitorMapping({
             our_seller_sku: matchingProduct.seller_sku,
-            our_asin: matchingProduct.asin,
+            our_asin: matchingProduct.asin ?? undefined,
             our_product_name: matchingProduct.product_name,
-            competitor_asin: asinResult.asin,
+            competitor_asin: asinResult.asin ?? '',
             mapping_reason: row.mapping_reason,
             mapping_notes: row.mapping_notes,
             mapping_priority: row.mapping_priority
@@ -442,23 +479,26 @@ const AdminCompetitorAnalysisPage = () => {
 
           if (mappingResult.success) {
             results.successful.push({
-              row: row.row_number,
-              seller_sku: row.seller_sku,
-              competitor_asin: asinResult.asin
-            });
+              seller_sku: matchingProduct.seller_sku,
+              competitor_url_or_asin: asinResult.asin ?? '',
+              mapping_reason: row.mapping_reason,
+              mapping_notes: row.mapping_notes,
+              mapping_priority: row.mapping_priority,
+              row_number: row.row_number
+            } as BulkUploadRecord);
           } else {
             results.failed.push({
               row: row.row_number,
               seller_sku: row.seller_sku,
-              error: mappingResult.message
-            });
+              error: mappingResult.message ?? 'Unknown error'
+            } as BulkUploadError);
           }
 
         } catch (err) {
           results.failed.push({
             row: row.row_number,
             seller_sku: row.seller_sku,
-            error: err.message
+            error: err instanceof Error ? err.message : 'Unknown error'
           });
         }
       }
@@ -470,7 +510,7 @@ const AdminCompetitorAnalysisPage = () => {
         loadExistingMappings(); // Refresh the mappings list
 
         // Trigger bulk competitor data fetch
-        const asinsToFetch = results.successful.map(item => item.competitor_asin);
+        const asinsToFetch = results.successful.map(item => item.competitor_url_or_asin);
         if (asinsToFetch.length > 0) {
           try {
             const fetchResult = await fetchMultipleCompetitorData(asinsToFetch);
@@ -486,16 +526,19 @@ const AdminCompetitorAnalysisPage = () => {
               );
             }
           } catch (fetchErr) {
+            console.error('Error fetching competitor data:', fetchErr);
             setSuccessMessage(prev =>
               (prev ? prev + ' ' : '') +
               'Bulk upload done, but error fetching competitor data. Will retry later.'
             );
+
           }
         }
       }
 
     } catch (err) {
-      setError('Bulk upload failed: ' + err.message);
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+      setError('Bulk upload failed: ' + errorMsg);
     } finally {
       setIsBulkProcessing(false);
     }
@@ -520,7 +563,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
   };
 
   // Delete existing mapping
-  const handleDeleteMapping = async (id) => {
+  const handleDeleteMapping = async (id: string): Promise<void> => {
     if (!window.confirm('Are you sure you want to delete this mapping?')) {
       return;
     }
@@ -542,7 +585,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
   };
 
   // Toggle mapping status
-  const handleToggleStatus = async (id) => {
+  const handleToggleStatus = async (id: string): Promise<void> => {
     startTransition(async () => {
       try {
         const result = await toggleMappingStatus(id);
@@ -567,9 +610,10 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
     }, 300);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ourProductSearch]);
 
-  const formatDate = (date) => {
+  const formatDate = (date: Date | string | null): string => {
     if (!date) return 'Never';
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -578,7 +622,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
     });
   };
 
-  const getPriorityLabel = (priority) => {
+  const getPriorityLabel = (priority: number): { label: string; class: string } => {
     switch (priority) {
       case 1: return { label: 'High', class: 'bg-red-100 text-red-800 border-red-200' };
       case 2: return { label: 'Medium', class: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
@@ -767,7 +811,9 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                           <h4 className="font-medium text-red-800 mb-2">Validation Errors:</h4>
                           <div className="max-h-32 overflow-y-auto">
                             {bulkUploadErrors.map((error, index) => (
-                              <div key={index} className="text-sm text-red-700">{error}</div>
+                              <div key={index} className="text-sm text-red-700">
+                                Row {error.row}: {error.seller_sku} - {error.error}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -1292,7 +1338,7 @@ SKU-003,https://amazon.ae/dp/B08DEF9012,Price comparison,Monitor pricing,3`;
                                   <div className="text-sm text-gray-600">{mapping.competitor_seller_name}</div>
                                 )}
                                 {mapping.mapping_reason && (
-                                  <div className="text-xs text-gray-500 italic">"{mapping.mapping_reason}"</div>
+                                  <div className="text-xs text-gray-500 italic">&quot;{mapping.mapping_reason}&quot;</div>
                                 )}
                               </div>
                             </div>

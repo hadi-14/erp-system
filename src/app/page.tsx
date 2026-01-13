@@ -48,7 +48,7 @@ type User = {
 };
 
 // Custom page components registry
-const customPageComponents: Record<string, any> = {
+const customPageComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   'AmazonSelerRaningsDashboard': lazy(() => import('@/components/reports/seller_rankings')),
   'CompetitorMappingDashboard': lazy(() => import('@/components/reports/seller_comparisions')),
   'PriceEstimationPage': lazy(() => import('@/components/reports/price_estimation')),
@@ -78,7 +78,7 @@ function CustomPageRenderer({ page }: { page: CustomPage }) {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Component not found</h3>
           <p className="text-gray-600">
-            The component "{page.component}" could not be loaded.
+            The component &quot;{page.component}&quot; could not be loaded.
           </p>
         </div>
       </div>
@@ -100,6 +100,22 @@ function CustomPageRenderer({ page }: { page: CustomPage }) {
 }
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-xl">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Dashboard</h2>
+          <p className="text-sm text-gray-500">Please wait...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +128,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
-  const [contentLoaded, setContentLoaded] = useState(false);
+  const [, setContentLoaded] = useState(false);
 
   // Update URL when content is selected
   const updateURL = (item: ContentItem | null) => {
@@ -158,8 +174,8 @@ export default function DashboardPage() {
       try {
         const res = await fetch("/api/reports");
         const data = await res.json();
-        const reportsData = (data.reports || []).map((r: any) => ({ 
-          ...r, 
+        const reportsData = (data.reports || []).map((r: { id: number; name: string; url: string; slug?: string }) => ({
+          ...r,
           type: 'report' as const,
           slug: r.slug || slugify(r.name) // Use existing slug or generate one
         }));
@@ -208,7 +224,7 @@ export default function DashboardPage() {
 
     const loadContent = async () => {
       const [loadedReports, loadedPages] = await Promise.all([
-        fetchReports(), 
+        fetchReports(),
         fetchCustomPages()
       ]);
       setContentLoaded(true);
@@ -220,7 +236,7 @@ export default function DashboardPage() {
         // Find matching content by slug
         const allContent = [...loadedReports, ...loadedPages];
         const matchedContent = allContent.find(item => item.slug === tabParam);
-        
+
         if (matchedContent) {
           setSelectedContent(matchedContent);
           if (matchedContent.type === 'page') {
@@ -275,8 +291,8 @@ export default function DashboardPage() {
     }
   };
 
-  const getIconComponent = (iconName?: string) => {
-    const icons: Record<string, any> = {
+  const getIconComponent = (iconName?: string): React.ComponentType<{ className?: string }> => {
+    const icons: Record<string, React.ComponentType<{ className?: string }>> = {
       BarChart3,
       User,
       Layout,

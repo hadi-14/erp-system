@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getWarehouses, createWarehouse, updateWarehouse, getRacks, getStockItems } from '@/actions/stock';
-import { Plus, Warehouse, Edit2, Trash2, MapPin, Grid3X3, Package, AlertCircle, X } from 'lucide-react';
+import { Plus, Warehouse, Edit2, Trash2, MapPin, Grid3X3, AlertCircle, X } from 'lucide-react';
 
 interface WarehouseData {
     id: number;
@@ -13,13 +13,13 @@ interface WarehouseData {
     available_space: number;
     status: string;
     created_at: Date;
-    racks?: any[];
+    racks?: { id: number; warehouse_id: number }[];
 }
 
 export default function WarehousesManagement() {
     const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
-    const [allRacks, setAllRacks] = useState<any[]>([]);
-    const [stockItems, setStockItems] = useState<any[]>([]);
+    const [allRacks, setAllRacks] = useState<{ id: number; warehouse_id: number }[]>([]);
+    const [stockItems, setStockItems] = useState<{ id: number; warehouse_id: number; quantity: number }[]>([]);
     const [loading, setLoading] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -48,7 +48,11 @@ export default function WarehousesManagement() {
             ]);
             setWarehouses(w);
             setAllRacks(r);
-            setStockItems(s);
+            setStockItems(s.filter(item => item.warehouse_id !== null).map(item => ({
+                id: item.id,
+                warehouse_id: item.warehouse_id as number,
+                quantity: item.quantity
+            })));
         } catch (error) {
             console.error('Failed to fetch data:', error);
             setError('Failed to load warehouses');

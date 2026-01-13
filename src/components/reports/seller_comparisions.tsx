@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { Trash2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Eye, EyeOff, Users, ArrowRightLeft, ExternalLink, AlertTriangle, Bell, BellRing, ArrowUpDown, Star } from 'lucide-react';
 import {
   getCompetitivePricingData,
-  getCompetitionCompetitivePricingData,
-  getCompetiveProductsMap,
   deleteCompetitivePricingRecord,
   getCompetitivePricingStats,
   getBulkRelatedCompetitiveData,
@@ -21,6 +19,8 @@ import {
   dismissAlert,
 } from '@/actions/price-alerts';
 import PriceAlertsNotification from '@/components/notifications';
+import { Prisma } from '@prisma/client';
+import * as XLSX from 'xlsx';
 
 interface DashboardStats {
   totalProducts: number;
@@ -48,7 +48,7 @@ interface PriceAlert {
 }
 
 interface LoadingState {
-  [key: number]: {
+  [key: string]: {
     basicInfoLoaded: boolean;
     competitivePricingLoaded: boolean;
     ratingsLoaded: boolean;
@@ -109,6 +109,21 @@ const RatingStars = ({ rating, reviewCount }: { rating: number | null; reviewCou
   );
 };
 
+type CompetitorPricingMainWithRelations = Prisma.AMZN_competitive_pricing_main_competitorsGetPayload<{
+  include: {
+    sales_rankings: true;
+    offer_listings: true;
+    competitive_prices: true;
+  };
+}>;
+
+interface CompetitorRating {
+  asin?: string;
+  competitor_name?: string;
+  created_at?: Date | string | null;
+  rating?: number | null;
+}
+
 const AmazonSellerRankingsDashboard: React.FC = () => {
   const [allData, setAllData] = useState<CompetitivePricingData[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -117,9 +132,9 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
     totalPricePoints: 0,
     totalSalesRankings: 0,
   });
-  const [relatedData, setRelatedData] = useState<{ [key: string]: any }>({});
-  const [productRatings, setProductRatings] = useState<{ [key: string]: any }>({});
-  const [competitorRatings, setCompetitorRatings] = useState<{ [key: string]: any }>({});
+  const [relatedData, setRelatedData] = useState<{ [key: string]: { competitorData?: CompetitorPricingMainWithRelations[] } }>({});
+  const [productRatings, setProductRatings] = useState<{ [key: string]: { rating?: number | null; review_count?: number | null } }>({});
+  const [competitorRatings, setCompetitorRatings] = useState<{ [key: string]: CompetitorRating[] }>({});
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({});
   const [pagination, setPagination] = useState({
@@ -130,6 +145,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   });
 
   const responsiveLimit = useResponsiveLimit();
+  const [isExporting, setIsExporting] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -137,12 +153,12 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
   const [showFilters, setShowFilters] = useState(true);
   const [manualLimit, setManualLimit] = useState<number | null>(null);
 
-const [sortConfig, setSortConfig] = useState<{
-  column: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating' | null;
-  order: 'asc' | 'desc';
-}>({ column: null, order: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{
+    column: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating' | null;
+    order: 'asc' | 'desc';
+  }>({ column: null, order: 'asc' });
 
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<bigint>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -162,83 +178,83 @@ const [sortConfig, setSortConfig] = useState<{
   }, []);
 
   // OPTIMIZED: Bulk load all data at once
-const loadData = useCallback(async () => {
-  try {
-    setLoading(true);
-    setError(null);
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const filters: CompetitivePricingFilters = {
-      searchTerm: debouncedSearchTerm,
-      statusFilter,
-      page: pagination.page,
-      limit: effectiveLimit,
-      alertFilter,
-      sortBy: sortConfig.column,
-      sortOrder: sortConfig.order,
-    };
-
-    const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
-    setAllData(result.data);
-
-    setPagination({
-      page: result.pagination.page,
-      limit: result.pagination.limit,
-      total: result.pagination.total,
-      totalPages: result.pagination.totalPages,
-    });
-
-    // Initialize loading state
-    const initialLoadingState: LoadingState = {};
-    result.data.forEach(item => {
-      initialLoadingState[item.id] = {
-        basicInfoLoaded: true,
-        competitivePricingLoaded: false,
-        ratingsLoaded: false
+      const filters: CompetitivePricingFilters = {
+        searchTerm: debouncedSearchTerm,
+        statusFilter,
+        page: pagination.page,
+        limit: effectiveLimit,
+        alertFilter,
+        sortBy: sortConfig.column,
+        sortOrder: sortConfig.order,
       };
-    });
-    setLoadingState(initialLoadingState);
 
-    // Bulk load all related data
-    const asins = result.data
-      .map(item => item.Product_Identifiers_MarketplaceASIN_ASIN)
-      .filter(Boolean) as string[];
+      const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
+      setAllData(result.data);
 
-    if (asins.length > 0) {
-      const [relatedDataResult, ratingsResult, competitorRatingsResult] = await Promise.all([
-        getBulkRelatedCompetitiveData(
-          result.data.map(item => ({
-            asin: item.Product_Identifiers_MarketplaceASIN_ASIN || undefined,
-            sellerSku: item.SellerSKU || undefined
-          }))
-        ),
-        getBulkProductRatings(asins),
-        getBulkCompetitorRatings(asins),
-      ]);
-
-      setRelatedData(relatedDataResult);
-      setProductRatings(ratingsResult);
-      setCompetitorRatings(competitorRatingsResult);
-
-      // Mark all as loaded
-      setLoadingState(prev => {
-        const updated = { ...prev };
-        result.data.forEach(item => {
-          updated[item.id] = {
-            basicInfoLoaded: true,
-            competitivePricingLoaded: true,
-            ratingsLoaded: true
-          };
-        });
-        return updated;
+      setPagination({
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        total: result.pagination.total,
+        totalPages: result.pagination.totalPages,
       });
+
+      // Initialize loading state
+      const initialLoadingState: LoadingState = {};
+      result.data.forEach(item => {
+        initialLoadingState[item.id.toString()] = {
+          basicInfoLoaded: true,
+          competitivePricingLoaded: false,
+          ratingsLoaded: false
+        };
+      });
+      setLoadingState(initialLoadingState);
+
+      // Bulk load all related data
+      const asins = result.data
+        .map(item => item.Product_Identifiers_MarketplaceASIN_ASIN)
+        .filter(Boolean) as string[];
+
+      if (asins.length > 0) {
+        const [relatedDataResult, ratingsResult, competitorRatingsResult] = await Promise.all([
+          getBulkRelatedCompetitiveData(
+            result.data.map(item => ({
+              asin: item.Product_Identifiers_MarketplaceASIN_ASIN || undefined,
+              sellerSku: item.SellerSKU || undefined
+            }))
+          ),
+          getBulkProductRatings(asins),
+          getBulkCompetitorRatings(asins),
+        ]);
+
+        setRelatedData(relatedDataResult);
+        setProductRatings(ratingsResult);
+        setCompetitorRatings(competitorRatingsResult ?? {});
+
+        // Mark all as loaded
+        setLoadingState(prev => {
+          const updated = { ...prev };
+          result.data.forEach(item => {
+            updated[item.id.toString()] = {
+              basicInfoLoaded: true,
+              competitivePricingLoaded: true,
+              ratingsLoaded: true
+            };
+          });
+          return updated;
+        });
+      }
+    } catch (err) {
+      setError('Failed to load data. Please try again.');
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    setError('Failed to load data. Please try again.');
-    console.error('Error loading data:', err);
-  } finally {
-    setLoading(false);
-  }
-}, [debouncedSearchTerm, statusFilter, alertFilter, pagination.page, effectiveLimit, sortConfig.column, sortConfig.order]);
+  }, [debouncedSearchTerm, statusFilter, alertFilter, pagination.page, effectiveLimit, sortConfig.column, sortConfig.order]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -252,7 +268,7 @@ const loadData = useCallback(async () => {
   const loadPriceAlerts = useCallback(async () => {
     try {
       const alertsResult = await getPriceAlerts('all', 10000, 0);
-      if (alertsResult.success) {
+      if (alertsResult.success && alertsResult.alerts) {
         setPriceAlerts(alertsResult.alerts);
       }
     } catch (err) {
@@ -265,30 +281,30 @@ const loadData = useCallback(async () => {
     loadPriceAlerts();
   }, [loadStats, loadPriceAlerts]);
 
-useEffect(() => {
-  loadData();
-}, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  const getProductAlerts = (asin: string, sellerSku: string | null) => {
+  const getProductAlerts = useCallback((asin: string, sellerSku: string | null) => {
     return priceAlerts.filter(alert =>
       alert.asin === asin || alert.seller_sku === sellerSku
     );
-  };
+  }, [priceAlerts]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: bigint) => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
 
     startTransition(async () => {
       try {
-        const result = await deleteCompetitivePricingRecord(id);
+        const result = await deleteCompetitivePricingRecord(Number(id));
 
         if (result.success) {
           await Promise.all([loadData(), loadStats()]);
           setRelatedData(prev => {
             const newData = { ...prev };
-            delete newData[id];
+            delete newData[id.toString()];
             return newData;
           });
         } else {
@@ -301,53 +317,56 @@ useEffect(() => {
     });
   };
 
-  const handleRefresh = useCallback(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleRefresh = useCallback(() => {
     setRelatedData({});
     setLoadingState({});
     setCompetitorRatings({});
-    Promise.all([loadData(), loadStats(), loadPriceAlerts()]);
+    loadData();
+    loadStats();
+    loadPriceAlerts();
   }, [loadData, loadStats, loadPriceAlerts]);
 
-const handleSort = (column: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating') => {
-  setSortConfig(prev => {
-    if (prev.column === column) {
+  const handleSort = (column: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating') => {
+    setSortConfig(prev => {
+      if (prev.column === column) {
+        return {
+          column,
+          order: prev.order === 'asc' ? 'desc' : 'asc'
+        };
+      }
       return {
         column,
-        order: prev.order === 'asc' ? 'desc' : 'asc'
+        order: 'asc'
       };
-    }
-    return {
-      column,
-      order: 'asc'
-    };
-  });
-  setPagination(prev => ({ ...prev, page: 1 }));
-};
+    });
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
 
-const SortableHeader = ({
-  label,
-  columnKey,
-}: {
-  label: string;
-  columnKey: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating';
-}) => (
-  <th
-    className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-    onClick={() => handleSort(columnKey)}
-  >
-    <div className="flex items-center gap-2">
-      <span>{label}</span>
-      <div className="flex items-center gap-1">
-        <ArrowUpDown className="w-4 h-4 text-gray-400" />
-        {sortConfig.column === columnKey && (
-          <span className="text-blue-600 font-bold">
-            {sortConfig.order === 'asc' ? '↑' : '↓'}
-          </span>
-        )}
+  const SortableHeader = ({
+    label,
+    columnKey,
+  }: {
+    label: string;
+    columnKey: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating';
+  }) => (
+    <th
+      className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+      onClick={() => handleSort(columnKey)}
+    >
+      <div className="flex items-center gap-2">
+        <span>{label}</span>
+        <div className="flex items-center gap-1">
+          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+          {sortConfig.column === columnKey && (
+            <span className="text-blue-600 font-bold">
+              {sortConfig.order === 'asc' ? '↑' : '↓'}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
-  </th>
-);
+    </th>
+  );
 
 
   const handleSearch = (value: string) => {
@@ -369,7 +388,7 @@ const SortableHeader = ({
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
-  const toggleRowExpansion = (id: number) => {
+  const toggleRowExpansion = (id: bigint) => {
     setExpandedRows(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -390,7 +409,7 @@ const SortableHeader = ({
     }).format(amount);
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = useCallback((date: Date | string | null) => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -399,17 +418,18 @@ const SortableHeader = ({
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const formatBigInt = (value: bigint | null) => {
+
+  const formatBigInt = (value: bigint | number | null) => {
     if (!value) return 'N/A';
     return Number(value).toLocaleString();
   };
 
-  const getCompetitorCount = (itemId: number, asin: string) => {
+  const getCompetitorCount = (itemId: bigint, asin: string) => {
     const key = asin || itemId.toString();
     const related = relatedData[key];
-    const state = loadingState[itemId];
+    const state = loadingState[itemId.toString()];
 
     if (!state?.competitivePricingLoaded) {
       return 'Loading...';
@@ -450,6 +470,298 @@ const SortableHeader = ({
       console.error('Error dismissing alert:', err);
     }
   };
+
+  const handleExportToExcel = useCallback(() => {
+    try {
+      setIsExporting(true);
+
+      // Prepare main product data
+      const mainData = allData.map(item => {
+        const asin = item.Product_Identifiers_MarketplaceASIN_ASIN || '';
+        const productAlerts = getProductAlerts(asin, item.SellerSKU);
+        const rating = productRatings[asin];
+        const related = relatedData[asin || item.id.toString()];
+
+        // Get best sales rank
+        const bestRank = item.sales_rankings && item.sales_rankings.length > 0
+          ? item.sales_rankings.reduce(
+            (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+            item.sales_rankings[0].rank
+          )
+          : null;
+
+        // Get price range
+        const price = item.competitive_prices && item.competitive_prices.length > 0
+          ? item.competitive_prices[0]?.price_amount
+          : null;
+
+        return {
+          'Seller SKU': item.SellerSKU || 'N/A',
+          'ASIN': asin || 'N/A',
+          'Status': item.status || 'N/A',
+          'Rating': rating?.rating ? rating.rating.toFixed(1) : 'N/A',
+          'Review Count': rating?.review_count || 'N/A',
+          'Active Alerts': productAlerts.length,
+          'Highest Alert Priority': productAlerts.length > 0
+            ? productAlerts.reduce((highest, alert) => {
+              const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
+              return (priorities[alert.priority as keyof typeof priorities] || 0) >
+                (priorities[highest as keyof typeof priorities] || 0)
+                ? alert.priority : highest;
+            }, 'low')
+            : 'None',
+          'Sales Rank': bestRank ? `#${Number(bestRank).toLocaleString()}` : 'N/A',
+          'Price': price ? `${item.competitive_prices[0]?.price_currency} ${price}` : 'N/A',
+          'Currency': item.competitive_prices?.[0]?.price_currency || 'N/A',
+          'Competitors Found': related?.competitorData?.length || 0,
+          'Created Date': formatDate(item.created_at),
+          'Product Category': item.sales_rankings?.[0]?.product_category_id || 'N/A',
+          'Fulfillment Channel': item.competitive_prices?.[0]?.fulfillment_channel || 'N/A',
+        };
+      });
+
+      // Prepare competitor data
+      interface ExportCompetitorData {
+        'Your SKU': string;
+        'Your ASIN': string;
+        'Competitor #': number;
+        'Competitor ASIN': string;
+        'Competitor Status': string;
+        'Competitor Rating': string;
+        'Competitor Name': string;
+        'Competitor Price': string;
+        'Competitor Currency': string;
+        'Competitor Sales Rank': string;
+        'Competitor Condition': string;
+        'Competitor Fulfillment': string;
+        'Competitor Created': string;
+      }
+
+      const competitorData: ExportCompetitorData[] = [];
+      allData.forEach(item => {
+        const asin = item.Product_Identifiers_MarketplaceASIN_ASIN || '';
+        const key = asin || item.id.toString();
+        const related = relatedData[key];
+        const compRatings = competitorRatings[asin] || [];
+
+        if (related?.competitorData && related.competitorData.length > 0) {
+          related.competitorData.forEach((competitor, index) => {
+            const competitorRating = compRatings.find(r => r.asin === competitor.Product_Identifiers_MarketplaceASIN_ASIN);
+
+            const bestCompRank = competitor.sales_rankings && competitor.sales_rankings.length > 0
+              ? competitor.sales_rankings.reduce(
+                (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+                competitor.sales_rankings[0].rank
+              )
+              : null;
+
+            const compPrice = competitor.competitive_prices && competitor.competitive_prices.length > 0
+              ? competitor.competitive_prices[0]?.price_amount
+              : null;
+
+            competitorData.push({
+              'Your SKU': item.SellerSKU || 'N/A',
+              'Your ASIN': asin || 'N/A',
+              'Competitor #': index + 1,
+              'Competitor ASIN': competitor.Product_Identifiers_MarketplaceASIN_ASIN || 'N/A',
+              'Competitor Status': competitor.status || 'N/A',
+              'Competitor Rating': competitorRating?.rating ? competitorRating.rating.toFixed(1) : 'N/A',
+              'Competitor Name': competitorRating?.competitor_name || 'N/A',
+              'Competitor Price': compPrice ? `${competitor.competitive_prices[0]?.price_currency} ${compPrice}` : 'N/A',
+              'Competitor Currency': competitor.competitive_prices?.[0]?.price_currency || 'N/A',
+              'Competitor Sales Rank': bestCompRank ? `#${Number(bestCompRank).toLocaleString()}` : 'N/A',
+              'Competitor Condition': competitor.competitive_prices?.[0]?.condition || 'N/A',
+              'Competitor Fulfillment': competitor.competitive_prices?.[0]?.fulfillment_channel || 'N/A',
+              'Competitor Created': formatDate(competitor.created_at),
+            });
+          });
+        }
+      });
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+
+      // Main products sheet
+      const wsMain = XLSX.utils.json_to_sheet(mainData);
+      const mainColWidths = [
+        { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 },
+        { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 10 },
+        { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 15 },
+      ];
+      wsMain['!cols'] = mainColWidths;
+      XLSX.utils.book_append_sheet(wb, wsMain, 'Products');
+
+      // Competitors sheet (if there's data)
+      if (competitorData.length > 0) {
+        const wsCompetitors = XLSX.utils.json_to_sheet(competitorData);
+        const competitorColWidths = [
+          { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
+          { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 20 },
+          { wch: 15 }, { wch: 18 }, { wch: 20 },
+        ];
+        wsCompetitors['!cols'] = competitorColWidths;
+        XLSX.utils.book_append_sheet(wb, wsCompetitors, 'Competitors');
+      }
+
+      // Generate filename
+      const filterSuffix = [];
+      if (debouncedSearchTerm) filterSuffix.push(`search-${debouncedSearchTerm}`);
+      if (statusFilter !== 'all') filterSuffix.push(`status-${statusFilter}`);
+      if (alertFilter !== 'all') filterSuffix.push(`alerts-${alertFilter}`);
+
+      const filename = `amazon-competitive-pricing${filterSuffix.length > 0 ? '-' + filterSuffix.join('-') : ''}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      console.log(`Exported ${mainData.length} products and ${competitorData.length} competitors to ${filename}`);
+    } catch (err) {
+      console.error('Error exporting to Excel:', err);
+      setError('Failed to export data to Excel. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [allData, productRatings, relatedData, competitorRatings, debouncedSearchTerm, statusFilter, alertFilter, getProductAlerts, formatDate]);
+
+  const handleExportAllToExcel = useCallback(async () => {
+    try {
+      setIsExporting(true);
+      setError(null);
+
+      // Fetch ALL data with current filters but without pagination
+      const filters: CompetitivePricingFilters = {
+        searchTerm: debouncedSearchTerm,
+        statusFilter,
+        page: 1,
+        limit: 999999, // Large number to get all results
+        alertFilter,
+        sortBy: sortConfig.column,
+        sortOrder: sortConfig.order,
+      };
+
+      const result: PaginatedResult<CompetitivePricingData> = await getCompetitivePricingData(filters);
+
+      if (result.data.length === 0) {
+        setError('No data to export');
+        setIsExporting(false);
+        return;
+      }
+
+      // Fetch all related data for the complete dataset
+      const asins = result.data
+        .map(item => item.Product_Identifiers_MarketplaceASIN_ASIN)
+        .filter(Boolean) as string[];
+
+      let allRelatedData: { [key: string]: { competitorData?: CompetitorPricingMainWithRelations[] } } = {};
+      let allProductRatings: { [key: string]: { rating?: number | null; review_count?: number | null } } = {};
+
+      if (asins.length > 0) {
+        const [relatedDataResult, ratingsResult] = await Promise.all([
+          getBulkRelatedCompetitiveData(
+            result.data.map(item => ({
+              asin: item.Product_Identifiers_MarketplaceASIN_ASIN || undefined,
+              sellerSku: item.SellerSKU || undefined
+            }))
+          ),
+          getBulkProductRatings(asins),
+        ]);
+
+        allRelatedData = relatedDataResult;
+        allProductRatings = ratingsResult;
+      }
+
+      // Prepare data for export
+      const exportData = result.data.map(item => {
+        const asin = item.Product_Identifiers_MarketplaceASIN_ASIN || '';
+        const productAlerts = priceAlerts.filter(alert =>
+          alert.asin === asin || alert.seller_sku === item.SellerSKU
+        );
+        const rating = allProductRatings[asin];
+        const related = allRelatedData[asin || item.id.toString()];
+
+        // Get best sales rank
+        const bestRank = item.sales_rankings && item.sales_rankings.length > 0
+          ? item.sales_rankings.reduce(
+            (min, r) => (r.rank ? (r.rank < (min ?? Infinity) ? r.rank : min) : min),
+            item.sales_rankings[0].rank
+          )
+          : null;
+
+        // Get price range
+        const price = item.competitive_prices && item.competitive_prices.length > 0
+          ? item.competitive_prices[0]?.price_amount
+          : null;
+
+        return {
+          'Seller SKU': item.SellerSKU || 'N/A',
+          'ASIN': asin || 'N/A',
+          'Status': item.status || 'N/A',
+          'Rating': rating?.rating ? rating.rating.toFixed(1) : 'N/A',
+          'Review Count': rating?.review_count || 'N/A',
+          'Active Alerts': productAlerts.length,
+          'Highest Alert Priority': productAlerts.length > 0
+            ? productAlerts.reduce((highest, alert) => {
+              const priorities = { critical: 4, high: 3, medium: 2, low: 1 };
+              return (priorities[alert.priority as keyof typeof priorities] || 0) >
+                (priorities[highest as keyof typeof priorities] || 0)
+                ? alert.priority : highest;
+            }, 'low')
+            : 'None',
+          'Sales Rank': bestRank ? `#${Number(bestRank).toLocaleString()}` : 'N/A',
+          'Price': price ? `${item.competitive_prices[0]?.price_currency} ${price}` : 'N/A',
+          'Currency': item.competitive_prices?.[0]?.price_currency || 'N/A',
+          'Competitors Found': related?.competitorData?.length || 0,
+          'Created Date': formatDate(item.created_at),
+          'Product Category': item.sales_rankings?.[0]?.product_category_id || 'N/A',
+          'Fulfillment Channel': item.competitive_prices?.[0]?.fulfillment_channel || 'N/A',
+        };
+      });
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 20 }, // Seller SKU
+        { wch: 15 }, // ASIN
+        { wch: 10 }, // Status
+        { wch: 10 }, // Rating
+        { wch: 12 }, // Review Count
+        { wch: 12 }, // Active Alerts
+        { wch: 18 }, // Highest Alert Priority
+        { wch: 15 }, // Sales Rank
+        { wch: 15 }, // Price
+        { wch: 10 }, // Currency
+        { wch: 15 }, // Competitors Found
+        { wch: 20 }, // Created Date
+        { wch: 20 }, // Product Category
+        { wch: 15 }, // Fulfillment Channel
+      ];
+      ws['!cols'] = colWidths;
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Competitive Pricing');
+
+      // Generate filename with current filters
+      const filterSuffix = [];
+      if (debouncedSearchTerm) filterSuffix.push(`search-${debouncedSearchTerm}`);
+      if (statusFilter !== 'all') filterSuffix.push(`status-${statusFilter}`);
+      if (alertFilter !== 'all') filterSuffix.push(`alerts-${alertFilter}`);
+
+      const filename = `amazon-competitive-pricing-ALL${filterSuffix.length > 0 ? '-' + filterSuffix.join('-') : ''}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      console.log(`Exported ${exportData.length} total items to ${filename}`);
+    } catch (err) {
+      console.error('Error exporting all data to Excel:', err);
+      setError('Failed to export all data to Excel. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [debouncedSearchTerm, statusFilter, alertFilter, sortConfig.column, sortConfig.order, priceAlerts, formatDate]);
 
   if (loading && allData.length === 0) {
     return (
@@ -572,9 +884,61 @@ const SortableHeader = ({
               />
             </div>
 
+            {/* <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+            >
+              <Filter className="w-5 h-5" />
+              Filters
+              {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button> */}
+          </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1 border border-gray-200">
+              <button
+                onClick={handleExportToExcel}
+                disabled={allData.length === 0 || loading || isExporting}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                title="Export current page to Excel"
+              >
+                <DollarSign className="w-4 h-4" />
+                <span className="font-medium text-sm">Export Page</span>
+                {allData.length > 0 && (
+                  <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs">
+                    {allData.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={handleExportAllToExcel}
+                disabled={pagination.total === 0 || loading || isExporting}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 relative"
+                title="Export all filtered data to Excel"
+              >
+                {isExporting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span className="font-medium text-sm">Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4" />
+                    <span className="font-medium text-sm">Export All</span>
+                    {pagination.total > 0 && (
+                      <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
+                        {pagination.total}
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+              className="flex items-center gap-3 px-6 py-3 text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
             >
               <Filter className="w-5 h-5" />
               Filters
@@ -638,7 +1002,7 @@ const SortableHeader = ({
             </div>
           )}
 
-                    <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
+          <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
             {sortConfig.column && (
               <>
                 <span className="text-gray-500">Sorted by:</span>
@@ -709,24 +1073,24 @@ const SortableHeader = ({
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
-<thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-  <tr>
-    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product Information</th>
-    <SortableHeader label="Status" columnKey="status" />
-    <SortableHeader label="Ratings" columnKey="rating" />
-    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Alerts</th>
-    <SortableHeader label="Sales Ranking" columnKey="ranking" />
-    <SortableHeader label="Price Range" columnKey="price" />
-    <SortableHeader label="Created Date" columnKey="date" />
-    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Competitors</th>
-    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-  </tr>
-</thead>              <tbody className="divide-y divide-gray-100">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product Information</th>
+                  <SortableHeader label="Status" columnKey="status" />
+                  <SortableHeader label="Ratings" columnKey="rating" />
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Alerts</th>
+                  <SortableHeader label="Sales Ranking" columnKey="ranking" />
+                  <SortableHeader label="Price Range" columnKey="price" />
+                  <SortableHeader label="Created Date" columnKey="date" />
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Competitors</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>              <tbody className="divide-y divide-gray-100">
                 {allData.map((item) => {
                   const asin = item.Product_Identifiers_MarketplaceASIN_ASIN || '';
                   const key = asin || item.id.toString();
                   const related = relatedData[key];
-                  const state = loadingState[item.id];
+                  const state = loadingState[item.id.toString()];
                   const productAlerts = getProductAlerts(asin, item.SellerSKU);
                   const hasProductAlerts = productAlerts.length > 0;
                   const highestPriority = productAlerts.reduce((highest, alert) => {
@@ -737,7 +1101,7 @@ const SortableHeader = ({
                   const compRatings = competitorRatings[asin] || [];
 
                   return (
-                    <React.Fragment key={item.id}>
+                    <React.Fragment key={item.id.toString()}>
                       <tr className="hover:bg-gray-50/50 transition-colors duration-200">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -753,7 +1117,7 @@ const SortableHeader = ({
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${item.status === 'Active'
                             ? 'bg-green-100 text-green-800 border border-green-200'
-                            : 'bg-gray-100 text-gray-800 border border-gray-200 text-gray-700'
+                            : 'bg-gray-100 text-gray-800 border border-gray-200'
                             }`}>
                             <div className={`w-2 h-2 rounded-full mr-2 ${item.status === 'Active' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
                             {item.status || 'N/A'}
@@ -1017,7 +1381,7 @@ const SortableHeader = ({
                                                             {rating.competitor_name || `Competitor ${ratingIndex + 1}`}
                                                           </span>
                                                           <span className="text-xs text-gray-400">
-                                                            {formatDate(rating.created_at)}
+                                                            {formatDate(rating.created_at ?? null)}
                                                           </span>
                                                         </div>
                                                         <div className="flex items-center gap-1">

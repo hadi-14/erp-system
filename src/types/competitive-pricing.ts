@@ -82,7 +82,7 @@ export interface DashboardStats {
   }>;
 }
 
-export interface ServerActionResponse<T = any> {
+export interface ServerActionResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;

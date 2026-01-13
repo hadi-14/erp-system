@@ -52,6 +52,27 @@ export interface AvailableProduct {
   product_name: string;
 }
 
+// Type definitions for Prisma where clauses
+interface CompetitorMappingWhereClause {
+  OR?: Array<{
+    our_seller_sku?: { contains: string; mode: 'insensitive' };
+    our_asin?: { contains: string; mode: 'insensitive' };
+    our_product_name?: { contains: string; mode: 'insensitive' };
+    competitor_asin?: { contains: string; mode: 'insensitive' };
+    competitor_seller_name?: { contains: string; mode: 'insensitive' };
+    competitor_product_name?: { contains: string; mode: 'insensitive' };
+  }>;
+  mapping_priority?: number;
+  is_active?: boolean;
+}
+
+interface ProductSearchWhereClause {
+  OR?: Array<{
+    SellerSKU?: { contains: string; mode: 'insensitive' };
+    Product_Identifiers_MarketplaceASIN_ASIN?: { contains: string; mode: 'insensitive' };
+  }>;
+}
+
 /**
  * Fetch competitor mapping data with filters and pagination
  */
@@ -68,7 +89,7 @@ export async function getCompetitorMappingData(
     } = filters;
 
     // Build where clause
-    const whereClause: any = {};
+    const whereClause: CompetitorMappingWhereClause = {};
     
     if (searchTerm) {
       whereClause.OR = [
@@ -206,7 +227,7 @@ export async function getCompetitorMappingStats(): Promise<{
  */
 export async function getAvailableProducts(searchTerm: string = ''): Promise<AvailableProduct[]> {
   try {
-    const whereClause: any = {};
+    const whereClause: ProductSearchWhereClause = {};
     
     if (searchTerm) {
       whereClause.OR = [
@@ -276,7 +297,7 @@ export async function getAvailableProducts(searchTerm: string = ''): Promise<Ava
       if (product.SellerSKU) {
         results.push({
           seller_sku: product.SellerSKU,
-          asin: product.Product_Identifiers_MarketplaceASIN,
+          asin: product.Product_Identifiers_MarketplaceASIN_ASIN,
           product_name: `Product: ${product.SellerSKU}`
         });
       }
@@ -548,5 +569,3 @@ export async function bulkDeleteCompetitorMappings(ids: string[]): Promise<{
     };
   }
 }
-
-

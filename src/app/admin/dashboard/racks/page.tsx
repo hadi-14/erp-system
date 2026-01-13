@@ -2,16 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import { getRacks, createRack, getWarehouses, getStockItems } from '@/actions/stock';
-import { Plus, Layers, Filter } from 'lucide-react';
+import { Plus, Layers } from 'lucide-react';
+
+interface Warehouse {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface Rack {
+  id: number;
+  warehouse_id: number;
+  code: string;
+  level: number;
+  capacity: number;
+  available_space: number;
+  status: 'active' | 'inactive';
+  warehouse: Warehouse;
+}
+
+interface StockItem {
+  id: number;
+  rack_id: number | null;
+  sku: string;
+  quantity: number;
+  available_quantity: number;
+  status: 'in_stock' | 'low_stock' | 'out_of_stock';
+}
 
 export default function RackManagement() {
-  const [racks, setRacks] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [stockItems, setStockItems] = useState<any[]>([]);
+  const [racks, setRacks] = useState<Rack[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [filterWarehouse, setFilterWarehouse] = useState<number | null>(null);
-  const [selectedRack, setSelectedRack] = useState<any>(null);
+  const [selectedRack, setSelectedRack] = useState<Rack | null>(null);
 
   const [formData, setFormData] = useState({
     warehouse_id: '',
@@ -32,9 +58,16 @@ export default function RackManagement() {
         getWarehouses(),
         getStockItems()
       ]);
-      setRacks(r);
+      setRacks(r as Rack[]);
       setWarehouses(w);
-      setStockItems(s);
+      setStockItems(s.map(item => ({
+        id: item.id,
+        rack_id: item.rack_id,
+        sku: item.sku,
+        quantity: item.quantity,
+        available_quantity: item.available_quantity,
+        status: (item.status as 'in_stock' | 'low_stock' | 'out_of_stock')
+      })));
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -68,7 +101,7 @@ export default function RackManagement() {
     ? racks.filter(r => r.warehouse_id === filterWarehouse)
     : racks;
 
-  const getRackUsage = (rack: any) => {
+  const getRackUsage = (rack: Rack) => {
     const items = stockItems.filter(s => s.rack_id === rack.id);
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
     return { items: items.length, totalQuantity };

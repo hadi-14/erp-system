@@ -195,8 +195,8 @@ export default function MonitoringDashboard() {
   ]
 }`}
                             </pre>
-                            <p>3. <strong>Initialize Products:</strong> Use the "Initialize Products" button above to set baseline prices</p>
-                            <p>4. <strong>Manual Testing:</strong> Use "Run Manual Check" to test the monitoring system</p>
+                            <p>3. <strong>Initialize Products:</strong> Use the &quot;Initialize Products&quot; button above to set baseline prices</p>
+                            <p>4. <strong>Manual Testing:</strong> Use &quot;Run Manual Check&quot; to test the monitoring system</p>
                         </div>
                     </div>
                 </>

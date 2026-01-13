@@ -40,7 +40,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // UI state
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<bigint | number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +51,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
   useEffect(() => {
     loadData();
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter, pagination.page]);
 
   const loadData = async () => {
@@ -88,7 +89,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
   };
 
   // Handle delete with server action
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: bigint | number) => {
     if (!window.confirm('Are you sure you want to delete this item?')) {
       return;
     }
@@ -130,7 +131,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
-  const toggleRowExpansion = (id: number) => {
+  const toggleRowExpansion = (id: bigint | number) => {
     setExpandedRows(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
@@ -142,17 +143,19 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
     });
   };
 
-  const formatCurrency = (amount: number | null, currency: string | null) => {
+  const formatCurrency = (amount: number | bigint | null, currency: string | null) => {
     if (!amount || !currency) return 'N/A';
+    const numAmount = typeof amount === 'bigint' ? Number(amount) : amount;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency
-    }).format(amount);
+    }).format(numAmount);
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    const parsedDate = typeof date === 'string' ? new Date(date) : date;
+    return parsedDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -161,9 +164,10 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
     });
   };
 
-  const formatBigInt = (value: bigint | null) => {
+  const formatBigInt = (value: bigint | number | null) => {
     if (!value) return 'N/A';
-    return Number(value).toLocaleString();
+    const numValue = typeof value === 'bigint' ? Number(value) : value;
+    return numValue.toLocaleString();
   };
 
   if (loading && data.length === 0) {

@@ -1,8 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { compare } from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 
 // Types for server actions
 export interface CompetitivePricingFilters {
@@ -11,50 +11,29 @@ export interface CompetitivePricingFilters {
   alertFilter?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'sku' | 'status' | 'date' | 'price' | 'ranking' | null;
+  sortBy?: 'sku' | 'status' | 'date' | 'price' | 'ranking' | 'rating' | null;
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface CompetitivePricingData {
-  id: number;
-  SellerSKU: string | null;
-  status: string | null;
-  Product_Identifiers_SKUIdentifier_MarketplaceId: string | null;
-  Product_Identifiers_SKUIdentifier_SellerId: string | null;
-  Product_Identifiers_SKUIdentifier_SellerSKU: string | null;
-  Product_Identifiers_MarketplaceASIN_MarketplaceId: string | null;
-  Product_Identifiers_MarketplaceASIN_ASIN: string | null;
-  created_at: Date | null;
-  updated_at?: Date | null;
-  sales_rankings: Array<{
-    id: number;
-    seller_sku: string | null;
-    product_category_id: string | null;
-    rank: bigint | null;
-    created_at: Date | null;
-  }>;
-  offer_listings: Array<{
-    id: number;
-    seller_sku: string | null;
-    condition: string | null;
-    count: bigint | null;
-    created_at: Date | null;
-  }>;
-  competitive_prices: Array<{
-    id: number;
-    seller_sku: string | null;
-    belongs_to_requester: boolean | null;
-    condition: string | null;
-    fulfillment_channel: string | null;
-    offer_type: string | null;
-    price_amount: number | null;
-    price_currency: string | null;
-    shipping_amount: bigint | null;
-    shipping_currency: string | null;
-    subcategory: string | null;
-    created_at: Date | null;
-  }>;
-}
+// Use Prisma's generated types for the main data
+type CompetitivePricingMainWithRelations = Prisma.AMZN_competitive_pricing_mainGetPayload<{
+  include: {
+    sales_rankings: true;
+    offer_listings: true;
+    competitive_prices: true;
+  };
+}>;
+
+type CompetitorPricingMainWithRelations = Prisma.AMZN_competitive_pricing_main_competitorsGetPayload<{
+  include: {
+    sales_rankings: true;
+    offer_listings: true;
+    competitive_prices: true;
+  };
+}>;
+
+// Export type for external use
+export type CompetitivePricingData = CompetitivePricingMainWithRelations;
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -68,8 +47,27 @@ export interface PaginatedResult<T> {
 
 export interface RelatedCompetitiveData {
   [key: string]: {
-    competitorData: CompetitivePricingData[];
+    competitorData: CompetitorPricingMainWithRelations[];
   };
+}
+
+// Type for Prisma where clause
+type CompetitivePricingWhereInput = Prisma.AMZN_competitive_pricing_mainWhereInput;
+type CompetitorPricingWhereInput = Prisma.AMZN_competitive_pricing_main_competitorsWhereInput;
+
+// Type for rating data
+interface RatingData {
+  asin: string;
+  rating: number | null;
+  created_at: Date | null;
+}
+
+// Type for competitor rating
+interface CompetitorRating {
+  id: number;
+  asin: string;
+  rating: number | null;
+  created_at: Date | null;
 }
 
 /**
@@ -77,7 +75,7 @@ export interface RelatedCompetitiveData {
  */
 export async function getCompetitivePricingData(
   filters: CompetitivePricingFilters = {}
-): Promise<PaginatedResult<CompetitivePricingData>> {
+): Promise<PaginatedResult<CompetitivePricingMainWithRelations>> {
   try {
     const {
       searchTerm = "",
@@ -89,7 +87,7 @@ export async function getCompetitivePricingData(
       sortOrder = 'asc',
     } = filters;
 
-    const whereClause: any = {};
+    const whereClause: CompetitivePricingWhereInput = {};
 
     if (searchTerm) {
       whereClause.OR = [
@@ -155,12 +153,14 @@ export async function getCompetitivePricingData(
     }
 
     // For complex sorting (price, ranking, rating), use advanced sort
-    if (sortBy === 'price' || sortBy === 'ranking' || sortBy === 'rating') {
+    const advancedSortTypes = ['price', 'ranking', 'rating'] as const;
+    if (sortBy && advancedSortTypes.includes(sortBy as typeof advancedSortTypes[number])) {
       return getCompetitivePricingDataWithAdvancedSort(filters);
     }
 
     // Build orderBy clause for simple sorts
-    let orderByClause: any = [{ created_at: 'desc' }];
+    type OrderByField = { created_at?: 'asc' | 'desc'; SellerSKU?: 'asc' | 'desc'; status?: 'asc' | 'desc' };
+    let orderByClause: OrderByField[] = [{ created_at: 'desc' }];
 
     if (sortBy === 'sku') {
       orderByClause = [{ SellerSKU: sortOrder }];
@@ -189,7 +189,7 @@ export async function getCompetitivePricingData(
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data as CompetitivePricingData[],
+      data,
       pagination: { page, limit, total, totalPages },
     };
   } catch (error) {
@@ -198,11 +198,9 @@ export async function getCompetitivePricingData(
   }
 }
 
-// 3. Update the getCompetitivePricingDataWithAdvancedSort function to include rating logic
-
 export async function getCompetitivePricingDataWithAdvancedSort(
   filters: CompetitivePricingFilters = {}
-): Promise<PaginatedResult<CompetitivePricingData>> {
+): Promise<PaginatedResult<CompetitivePricingMainWithRelations>> {
   try {
     const {
       searchTerm = "",
@@ -214,7 +212,7 @@ export async function getCompetitivePricingDataWithAdvancedSort(
       sortOrder = 'asc',
     } = filters;
 
-    const whereClause: any = {};
+    const whereClause: CompetitivePricingWhereInput = {};
 
     if (searchTerm) {
       whereClause.OR = [
@@ -289,11 +287,11 @@ export async function getCompetitivePricingDataWithAdvancedSort(
     });
 
     // If sorting by rating, we need to fetch ratings
-    let ratingsMap: { [key: string]: number } = {};
+    const ratingsMap: { [key: string]: number } = {};
     if (sortBy === 'rating') {
       const asins = allData
         .map(item => item.Product_Identifiers_MarketplaceASIN_ASIN)
-        .filter(Boolean) as string[];
+        .filter((asin): asin is string => asin !== null);
 
       if (asins.length > 0) {
         const ratings = await prisma.amazon_ratings.findMany({
@@ -313,12 +311,12 @@ export async function getCompetitivePricingDataWithAdvancedSort(
     }
 
     // Helper function to get best (minimum) rank
-    const getBestRank = (rankings: Array<{ rank: bigint | null }> | undefined): bigint => {
+    const getBestRank = (rankings: Array<{ rank: number | null }> | undefined): number => {
       if (!rankings || rankings.length === 0) {
-        return BigInt(Number.MAX_SAFE_INTEGER);
+        return Number.MAX_SAFE_INTEGER;
       }
 
-      let bestRank = BigInt(Number.MAX_SAFE_INTEGER);
+      let bestRank = Number.MAX_SAFE_INTEGER;
       for (const ranking of rankings) {
         if (ranking.rank !== null && ranking.rank < bestRank) {
           bestRank = ranking.rank;
@@ -343,7 +341,7 @@ export async function getCompetitivePricingDataWithAdvancedSort(
     };
 
     // Sort in-memory based on sortBy parameter
-    let sortedData = [...allData];
+    const sortedData = [...allData];
 
     if (sortBy === 'price') {
       sortedData.sort((a, b) => {
@@ -356,17 +354,8 @@ export async function getCompetitivePricingDataWithAdvancedSort(
       sortedData.sort((a, b) => {
         const rankA = getBestRank(a.sales_rankings);
         const rankB = getBestRank(b.sales_rankings);
-
-        let result: number;
-        if (rankA < rankB) {
-          result = -1;
-        } else if (rankA > rankB) {
-          result = 1;
-        } else {
-          result = 0;
-        }
-
-        return sortOrder === 'asc' ? result : -result;
+        const diff = rankA - rankB;
+        return sortOrder === 'asc' ? diff : -diff;
       });
     } else if (sortBy === 'rating') {
       sortedData.sort((a, b) => {
@@ -415,7 +404,7 @@ export async function getCompetitivePricingDataWithAdvancedSort(
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: paginatedData as CompetitivePricingData[],
+      data: paginatedData,
       pagination: { page, limit, total, totalPages },
     };
   } catch (error) {
@@ -439,11 +428,11 @@ export async function getBulkRelatedCompetitiveData(
     // Extract all unique ASINs and SKUs
     const asins = [...new Set(items
       .map(item => item.asin)
-      .filter(Boolean))] as string[];
+      .filter((asin): asin is string => asin !== undefined))];
 
     const sellerSkus = [...new Set(items
       .map(item => item.sellerSku)
-      .filter(Boolean))] as string[];
+      .filter((sku): sku is string => sku !== undefined))];
 
     if (asins.length === 0 && sellerSkus.length === 0) {
       return {};
@@ -503,32 +492,8 @@ export async function getBulkRelatedCompetitiveData(
       );
 
       const competitorData = relevantMappings
-        .map(mapping => {
-          const competitor = competitorMap.get(mapping.competitor_asin);
-          if (!competitor) return null;
-
-          return {
-            id: competitor.id,
-            SellerSKU: competitor.SellerSKU || mapping.competitor_seller_id,
-            status: competitor.status,
-            Product_Identifiers_SKUIdentifier_MarketplaceId:
-              competitor.Product_Identifiers_SKUIdentifier_MarketplaceId,
-            Product_Identifiers_SKUIdentifier_SellerId:
-              competitor.Product_Identifiers_SKUIdentifier_SellerId,
-            Product_Identifiers_SKUIdentifier_SellerSKU:
-              competitor.Product_Identifiers_SKUIdentifier_SellerSKU,
-            Product_Identifiers_MarketplaceASIN_MarketplaceId:
-              competitor.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-            Product_Identifiers_MarketplaceASIN_ASIN:
-              competitor.Product_Identifiers_MarketplaceASIN_ASIN,
-            created_at: competitor.created_at,
-            updated_at: competitor.updated_at,
-            sales_rankings: competitor.sales_rankings,
-            competitive_prices: competitor.competitive_prices,
-            offer_listings: competitor.offer_listings,
-          } as CompetitivePricingData;
-        })
-        .filter(Boolean);
+        .map(mapping => competitorMap.get(mapping.competitor_asin))
+        .filter((comp): comp is CompetitorPricingMainWithRelations => comp !== undefined);
 
       resultMap[key] = { competitorData };
     });
@@ -546,7 +511,7 @@ export async function getBulkRelatedCompetitiveData(
 export async function getRelatedCompetitivePricingData(
   asin?: string,
   sellerSku?: string
-): Promise<{ competitorData: CompetitivePricingData[] }> {
+): Promise<{ competitorData: CompetitorPricingMainWithRelations[] }> {
   try {
     const result = await getBulkRelatedCompetitiveData([{ asin, sellerSku }]);
     const key = asin || sellerSku || "";
@@ -562,7 +527,7 @@ export async function getRelatedCompetitivePricingData(
  */
 export async function getBulkProductRatings(
   asins: string[]
-): Promise<{ [key: string]: any }> {
+): Promise<{ [key: string]: RatingData }> {
   try {
     if (!asins || asins.length === 0) return {};
 
@@ -579,7 +544,7 @@ export async function getBulkProductRatings(
       },
     });
 
-    const ratingMap: { [key: string]: any } = {};
+    const ratingMap: { [key: string]: RatingData } = {};
     ratings.forEach(rating => {
       ratingMap[rating.asin] = {
         asin: rating.asin,
@@ -600,7 +565,7 @@ export async function getBulkProductRatings(
  */
 export async function getBulkCompetitorRatings(
   asins: string[]
-): Promise<{ [key: string]: any[] }> {
+): Promise<{ [key: string]: CompetitorRating[] }> {
   try {
     if (!asins || asins.length === 0) return {};
 
@@ -612,12 +577,17 @@ export async function getBulkCompetitorRatings(
       },
     });
 
-    const ratingMap: { [key: string]: any[] } = {};
+    const ratingMap: { [key: string]: CompetitorRating[] } = {};
     ratings.forEach(rating => {
       if (!ratingMap[rating.asin]) {
         ratingMap[rating.asin] = [];
       }
-      ratingMap[rating.asin].push(rating);
+      ratingMap[rating.asin].push({
+        id: Number(rating.id),
+        asin: rating.asin,
+        rating: rating.rating,
+        created_at: rating.created_at,
+      });
     });
 
     return ratingMap;
@@ -644,7 +614,7 @@ export async function getCompetiveProductsMap() {
 
 export async function getCompetitionCompetitivePricingData(
   filters: CompetitivePricingFilters = {}
-): Promise<PaginatedResult<CompetitivePricingData>> {
+): Promise<PaginatedResult<CompetitorPricingMainWithRelations>> {
   try {
     const {
       searchTerm = "",
@@ -653,7 +623,7 @@ export async function getCompetitionCompetitivePricingData(
       limit = 10,
     } = filters;
 
-    const whereClause: any = {};
+    const whereClause: CompetitorPricingWhereInput = {};
 
     if (searchTerm) {
       whereClause.OR = [
@@ -694,28 +664,8 @@ export async function getCompetitionCompetitivePricingData(
 
     const totalPages = Math.ceil(total / limit);
 
-    const transformedData: CompetitivePricingData[] = data.map((item) => ({
-      id: item.id,
-      SellerSKU: item.SellerSKU,
-      status: item.status,
-      Product_Identifiers_SKUIdentifier_MarketplaceId:
-        item.Product_Identifiers_SKUIdentifier_MarketplaceId,
-      Product_Identifiers_SKUIdentifier_SellerId:
-        item.Product_Identifiers_SKUIdentifier_SellerId,
-      Product_Identifiers_SKUIdentifier_SellerSKU:
-        item.Product_Identifiers_SKUIdentifier_SellerSKU,
-      Product_Identifiers_MarketplaceASIN_MarketplaceId:
-        item.Product_Identifiers_MarketplaceASIN_MarketplaceId,
-      Product_Identifiers_MarketplaceASIN_ASIN:
-        item.Product_Identifiers_MarketplaceASIN_ASIN,
-      created_at: item.created_at,
-      sales_rankings: item.sales_rankings,
-      competitive_prices: item.competitive_prices,
-      offer_listings: item.offer_listings,
-    }));
-
     return {
-      data: transformedData,
+      data,
       pagination: { page, limit, total, totalPages },
     };
   } catch (error) {
@@ -758,24 +708,24 @@ export async function getCompetitorCompetitivePricingStats(): Promise<{
 }
 
 export async function deleteCompetitivePricingRecord(
-  id: number
+  id: number | bigint
 ): Promise<{ success: boolean; message: string }> {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.aMZN_sales_rankings.deleteMany({
-        where: { competitive_pricing_main_id: id },
+        where: { competitive_pricing_main_id: BigInt(id) },
       });
 
       await tx.aMZN_offer_listings.deleteMany({
-        where: { competitive_pricing_main_id: id },
+        where: { competitive_pricing_main_id: BigInt(id) },
       });
 
       await tx.aMZN_competitive_prices.deleteMany({
-        where: { competitive_pricing_main_id: id },
+        where: { competitive_pricing_main_id: BigInt(id) },
       });
 
       await tx.aMZN_competitive_pricing_main.delete({
-        where: { id },
+        where: { id: BigInt(id) },
       });
     });
 
@@ -840,7 +790,7 @@ export async function createCompetitivePricingRecord(data: {
             competitive_pricing_main_id: mainRecord.id,
             seller_sku: data.sellerSKU,
             product_category_id: ranking.product_category_id,
-            rank: BigInt(ranking.rank),
+            rank: ranking.rank,
           })),
         });
       }
@@ -851,7 +801,7 @@ export async function createCompetitivePricingRecord(data: {
             competitive_pricing_main_id: mainRecord.id,
             seller_sku: data.sellerSKU,
             condition: offer.condition,
-            count: BigInt(offer.count),
+            count: offer.count,
           })),
         });
       }
@@ -867,9 +817,7 @@ export async function createCompetitivePricingRecord(data: {
             offer_type: price.offer_type,
             price_amount: price.price_amount,
             price_currency: price.price_currency,
-            shipping_amount: price.shipping_amount
-              ? BigInt(price.shipping_amount)
-              : null,
+            shipping_amount: price.shipping_amount ?? null,
             shipping_currency: price.shipping_currency,
             subcategory: price.subcategory,
           })),
@@ -884,7 +832,7 @@ export async function createCompetitivePricingRecord(data: {
     return {
       success: true,
       message: "Record created successfully",
-      id: result.id,
+      id: Number(result.id),
     };
   } catch (error) {
     console.error("Error creating competitive pricing record:", error);
@@ -896,7 +844,7 @@ export async function createCompetitivePricingRecord(data: {
 }
 
 export async function updateCompetitivePricingRecord(
-  id: number,
+  id: number | bigint,
   data: {
     sellerSKU?: string;
     status?: string;
@@ -907,7 +855,7 @@ export async function updateCompetitivePricingRecord(
 ): Promise<{ success: boolean; message: string }> {
   try {
     await prisma.aMZN_competitive_pricing_main.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
         ...(data.sellerSKU && { SellerSKU: data.sellerSKU }),
         ...(data.status && { status: data.status }),
@@ -974,27 +922,29 @@ export async function getCompetitivePricingStats(): Promise<{
 }
 
 export async function bulkDeleteCompetitivePricingRecords(
-  ids: number[]
+  ids: (number | bigint)[]
 ): Promise<{ success: boolean; message: string; deletedCount: number }> {
   try {
     let deletedCount = 0;
 
     await prisma.$transaction(async (tx) => {
       for (const id of ids) {
+        const bigIntId = BigInt(id);
+        
         await tx.aMZN_sales_rankings.deleteMany({
-          where: { competitive_pricing_main_id: id },
+          where: { competitive_pricing_main_id: bigIntId },
         });
 
         await tx.aMZN_offer_listings.deleteMany({
-          where: { competitive_pricing_main_id: id },
+          where: { competitive_pricing_main_id: bigIntId },
         });
 
         await tx.aMZN_competitive_prices.deleteMany({
-          where: { competitive_pricing_main_id: id },
+          where: { competitive_pricing_main_id: bigIntId },
         });
 
         const result = await tx.aMZN_competitive_pricing_main.delete({
-          where: { id },
+          where: { id: bigIntId },
         });
 
         if (result) deletedCount++;

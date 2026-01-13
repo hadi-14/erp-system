@@ -18,7 +18,7 @@ export async function getProducts() {
 
 export async function createProduct(formData: FormData) {
   try {
-    const productData: Omit<products, 'id' | 'createdAt'> = {
+    const productData: Omit<products, 'id' | 'createdAt' | 'updatedAt'> = {
       sku: formData.get('sku') as string,
       asin: formData.get('asin') as string || null,
       mainCategory: formData.get('mainCategory') as string,
@@ -44,7 +44,7 @@ export async function createProduct(formData: FormData) {
       salePerson: formData.get('salePerson') as string || null,
     }
 
-    await prisma.products.create({ data: productData})
+    await prisma.products.create({ data: productData })
 
     revalidatePath('/products')
     return { success: true }
@@ -109,7 +109,7 @@ export async function deleteProduct(id: number) {
   }
 }
 
-export async function bulkImportProducts(products: Omit<products, 'id' | 'createdAt'>[]) {
+export async function bulkImportProducts(products: Omit<products, 'id' | 'createdAt' | 'updatedAt'>[]) {
   try {
     const result = await prisma.products.createMany({
       data: products,

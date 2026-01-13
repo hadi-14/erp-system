@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export interface ProductRatingData {
     asin: string;
@@ -18,7 +19,7 @@ export interface CompetitorRatingData {
 /**
  * Helper function to convert Decimal to number
  */
-const decimalToNumber = (value: any): number | null => {
+const decimalToNumber = (value: Decimal | number | null | undefined): number | null => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
     return Number(value);
@@ -212,8 +213,9 @@ export async function getTopRatedProducts(limit: number = 10) {
 
 /**
  * Get low rated products (potential issue products)
+ * @param limit - Maximum number of products to return
  */
-export async function getLowRatedProducts(limit: number = 10, minReviews: number = 5) {
+export async function getLowRatedProducts(limit: number = 10) {
     try {
         const lowProducts = await prisma.amazon_ratings.findMany({
             where: {

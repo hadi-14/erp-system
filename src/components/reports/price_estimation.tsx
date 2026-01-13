@@ -39,7 +39,7 @@ interface EstimationResult {
 }
 
 interface CompetitivePricingData {
-  id: number;
+  id: bigint;
   SellerSKU: string | null;
   status: string | null;
   Product_Identifiers_MarketplaceASIN_ASIN: string | null;
@@ -71,7 +71,7 @@ export default function PriceEstimationPage() {
       const transformedProducts: Product[] = result.data
         .filter(item => item.Product_Identifiers_MarketplaceASIN_ASIN)
         .map((item, index) => ({
-          id: item.id,
+          id: Number(item.id),
           sku: item.SellerSKU || `SKU-${index}`,
           asin: item.Product_Identifiers_MarketplaceASIN_ASIN || '',
           productTitle: item.SellerSKU || item.Product_Identifiers_MarketplaceASIN_ASIN || 'Product',
@@ -202,7 +202,7 @@ export default function PriceEstimationPage() {
           )
         );
       }
-    } catch (error) {
+    } catch {
       setEstimations(prev =>
         prev.map(e =>
           e.id === estimationId

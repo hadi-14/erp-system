@@ -37,7 +37,7 @@ def DeleteOld(table, startDate, endDate, dateCol='date'):
             print(f"[ERROR] Delete failed: {e}")
 
 def DeleteIDs(table, ids_col, ids):
-    """Delete rows in Postgres by IDs"""
+    """Delete rows in Postgres by IDs (silently skips non-existent IDs)"""
     try:
         with engine.begin() as con:  # engine.begin() auto-commits
             statement = text(
@@ -46,8 +46,14 @@ def DeleteIDs(table, ids_col, ids):
                 WHERE "{ids_col}" IN :ids;
                 """
             )
-            con.execute(statement, {"ids": tuple(ids)})
-            print(f"[INFO] Deleted rows from {table} with IDs: {ids}")
+            result = con.execute(statement, {"ids": tuple(ids)})
+            deleted_count = result.rowcount
+            
+            if deleted_count > 0:
+                print(f"[INFO] Deleted {deleted_count} row(s) from {table}")
+            else:
+                print(f"[INFO] No rows found in {table} with specified IDs")
+                
     except Exception as e:
         print(f"[ERROR] Delete failed: {e}")
 

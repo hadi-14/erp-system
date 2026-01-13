@@ -214,39 +214,3 @@ products_df['productItems.productImgUrl'] = products_df['productItems.productImg
 products_df.reset_index(drop=True, inplace=True)
 products_df.columns = [col.replace("productItems.", "") for col in products_df.columns]
 dump_to_sql(products_df, "1688_product_list_en", safe_drop=True)
-
-
-# === Amazon ===
-df = pd.read_sql_table("AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", engine)
-# Select product-related columns
-product_cols = [
-    "listing-id",
-    "item-name",
-    "item-description",
-    "seller-sku",
-    "price",
-    "quantity",
-    "open-date",
-    "image-url",
-    "item-is-marketplace",
-    "product-id",
-    "product-id-type",
-    "asin1",
-    "asin2",
-    "asin3",
-    "item-condition",
-    "zshop-category1",
-    "zshop-browse-path",
-    "zshop-storefront-feature",
-    "will-ship-internationally",
-    "expedited-shipping",
-    "fulfillment-channel",
-    "status"
-]
-
-
-products_df = df[product_cols]
-products_df = products_df.drop_duplicates()
-products_df = products_df.drop_duplicates(subset=["listing-id"])
-products_df.reset_index(drop=True, inplace=True)
-dump_to_sql(products_df, "AMZN_PRODUCT_LIST", safe_drop=True)

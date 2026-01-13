@@ -121,13 +121,13 @@ function serializeOrder(order: Order) {
       : null,
     product_list_en: order.product_list_en
       ? {
-          productID: order.product_list_en.productID.toString(),
-          name: order.product_list_en.name,
-          price: Number(order.product_list_en.price),
-          productImgUrl: order.product_list_en.productImgUrl,
-          productSnapshotUrl: order.product_list_en.productSnapshotUrl,
-          unit: order.product_list_en.unit,
-        }
+        productID: order.product_list_en.productID.toString(),
+        name: order.product_list_en.name,
+        price: Number(order.product_list_en.price),
+        productImgUrl: order.product_list_en.productImgUrl,
+        productSnapshotUrl: order.product_list_en.productSnapshotUrl,
+        unit: order.product_list_en.unit,
+      }
       : null,
   };
 }
@@ -182,13 +182,13 @@ function groupOrdersByBaseId(orders: RawOrderData[]) {
       productImgUrl: product.productImgUrl,
       product_list_en: product.product_list_en
         ? {
-            productID: product.product_list_en.productID.toString(),
-            name: product.product_list_en.name,
-            price: Number(product.product_list_en.price),
-            productImgUrl: product.product_list_en.productImgUrl,
-            productSnapshotUrl: product.product_list_en.productSnapshotUrl,
-            unit: product.product_list_en.unit,
-          }
+          productID: product.product_list_en.productID.toString(),
+          name: product.product_list_en.name,
+          price: Number(product.product_list_en.price),
+          productImgUrl: product.product_list_en.productImgUrl,
+          productSnapshotUrl: product.product_list_en.productSnapshotUrl,
+          unit: product.product_list_en.unit,
+        }
         : null,
     })),
   }));
@@ -281,9 +281,9 @@ export async function getOrdersWithProducts() {
           : null,
       product_list_en: order.product_list_en
         ? {
-            ...order.product_list_en,
-            productID: BigInt(order.product_list_en.productID.toString()),
-          }
+          ...order.product_list_en,
+          productID: BigInt(order.product_list_en.productID.toString()),
+        }
         : null,
     }));
     const groupedOrders = groupOrdersByBaseId(ordersWithBigInt);
@@ -318,7 +318,7 @@ export async function getOrdersWithProducts() {
         },
         take: 50,
       });
-      
+
       // Convert Decimal fields to bigint for RawOrderData compatibility
       const basicOrdersWithBigInt = basicOrders.map((order) => ({
         ...order,
@@ -334,9 +334,9 @@ export async function getOrdersWithProducts() {
             : null,
         product_list_en: order.product_list_en
           ? {
-              ...order.product_list_en,
-              productID: BigInt(order.product_list_en.productID.toString()),
-            }
+            ...order.product_list_en,
+            productID: BigInt(order.product_list_en.productID.toString()),
+          }
           : null,
       }));
       const groupedBasicOrders = groupOrdersByBaseId(basicOrdersWithBigInt);
@@ -357,7 +357,7 @@ export async function getOrderDetails(orderId: string) {
 
     const orderItems = await prisma.orders_by_products.findMany({
       where: {
-        baseInfo_id: orderIdBigInt.toString(),
+        baseInfo_id: Number(orderIdBigInt),
       },
       select: {
         id: true,
@@ -401,9 +401,9 @@ export async function getOrderDetails(orderId: string) {
           : null,
       product_list_en: order.product_list_en
         ? {
-            ...order.product_list_en,
-            productID: BigInt(order.product_list_en.productID.toString()),
-          }
+          ...order.product_list_en,
+          productID: BigInt(order.product_list_en.productID.toString()),
+        }
         : null,
     }));
     const groupedOrders = groupOrdersByBaseId(orderItemsWithBigInt);
@@ -463,7 +463,27 @@ export async function getOrdersInBatches(
       ],
     });
 
-    const groupedOrders = groupOrdersByBaseId(orders);
+    // Convert Decimal fields to bigint for RawOrderData compatibility
+    const ordersWithBigInt = orders.map((order) => ({
+      ...order,
+      baseInfo_id: BigInt(order.baseInfo_id.toString()),
+      id: BigInt(order.id.toString()),
+      productItems_productID:
+        order.productItems_productID !== null
+          ? BigInt(order.productItems_productID.toString())
+          : null,
+      productItems_quantity:
+        order.productItems_quantity !== null
+          ? Number(order.productItems_quantity)
+          : null,
+      product_list_en: order.product_list_en
+        ? {
+            ...order.product_list_en,
+            productID: BigInt(order.product_list_en.productID.toString()),
+          }
+        : null,
+    }));
+    const groupedOrders = groupOrdersByBaseId(ordersWithBigInt);
     return groupedOrders;
   } catch (error) {
     console.error(
@@ -474,17 +494,169 @@ export async function getOrdersInBatches(
   }
 }
 
-// Update single order approval status
+// Update single order approval status with stock management
 export async function updateOrderApproval(orderId: string, approved: boolean) {
   try {
     if (!orderId || typeof approved !== "boolean") {
       return { success: false, error: "Invalid request data" };
     }
 
-    // Convert string to BigInt for baseInfo_id comparison
+    // Only process stock updates when approving, not when disapproving
+    if (approved) {
+      // Get order details with products - orderId comes as baseInfo_id (Float)
+      const orderItems = await prisma.orders_by_products.findMany({
+        where: {
+          baseInfo_id: parseFloat(orderId),
+        },
+        select: {
+          productItems_productID: true,
+          productItems_quantity: true,
+          baseInfo_totalAmount: true,
+          baseInfo_status: true,
+        },
+      });
+
+      if (orderItems.length === 0) {
+        return { success: false, error: "Order not found" };
+      }
+
+      // Process each product in the order
+      const stockUpdates = [];
+      const mappingCreations = [];
+
+      for (const item of orderItems) {
+        if (!item.productItems_productID || !item.productItems_quantity) {
+          continue;
+        }
+
+        const productIdFloat = parseFloat(item.productItems_productID.toString());
+        const quantity = Number(item.productItems_quantity);
+
+        // Try to find existing mapping using cn_product_id
+        const existingMapping = await prisma.order_mappings.findFirst({
+          where: {
+            cn_product_id: productIdFloat,
+          },
+          select: {
+            amzn_sku: true,
+            amzn_asin: true,
+            id: true,
+            mapping_confidence: true,
+          },
+        });
+
+        if (existingMapping?.amzn_sku && existingMapping?.amzn_asin) {
+          // Found mapped Amazon product - queue for stock update
+          stockUpdates.push({
+            sku: existingMapping.amzn_sku,
+            asin: existingMapping.amzn_asin,
+            quantity: quantity,
+            orderId: orderId,
+            mappingId: existingMapping.id,
+          });
+        } else {
+          // No mapping found - get CN product details and create partial mapping
+          const cnProduct = await prisma.product_list_en.findUnique({
+            where: {
+              productID: productIdFloat,
+            },
+            select: {
+              productID: true,
+              name: true,
+              price: true,
+              productImgUrl: true,
+              unit: true,
+            },
+          });
+
+          mappingCreations.push({
+            cn_product_id: productIdFloat,
+            quantity: quantity,
+            orderId: orderId,
+            productName: cnProduct?.name || `Product ${productIdFloat}`,
+            cn_price: cnProduct?.price || null,
+            cn_image_url: cnProduct?.productImgUrl || null,
+            cn_unit: cnProduct?.unit || null,
+          });
+        }
+      }
+
+      // Execute stock updates for mapped products
+      for (const update of stockUpdates) {
+        try {
+          // Upsert stock item - create if doesn't exist, otherwise update
+          await prisma.stock_items.upsert({
+            where: { sku: update.sku },
+            update: {
+              quantity: {
+                increment: update.quantity,
+              },
+              available_quantity: {
+                increment: update.quantity,
+              },
+              updated_at: new Date(),
+            },
+            create: {
+              sku: update.sku,
+              quantity: update.quantity,
+              available_quantity: update.quantity,
+              status: "in_stock",
+              warehouse: { connect: { id: 1 } },
+            },
+          });
+
+          // Log the stock movement
+          const stockItem = await prisma.stock_items.findUnique({
+            where: { sku: update.sku },
+            select: { id: true },
+          });
+
+          if (stockItem) {
+            await prisma.stock_movements.create({
+              data: {
+                stock_item_id: stockItem.id,
+                movement_type: "inbound",
+                quantity: update.quantity,
+                reason: "Order approval",
+                reference_id: update.orderId,
+                notes: `Stock increased from approved order ${update.orderId}`,
+              },
+            });
+          }
+        } catch (updateError) {
+          console.error(`Failed to update stock for SKU ${update.sku}:`, updateError);
+          // Continue with other products even if one fails
+        }
+      }
+
+      // Create partial mappings for unmapped CN products
+      for (const mapping of mappingCreations) {
+        try {
+          await prisma.order_mappings.create({
+            data: {
+              custom_sku: `CN-${mapping.cn_product_id}-${Date.now()}`,
+              cn_product_id: mapping.cn_product_id,
+              cn_product_name: mapping.productName,
+              cn_quantity: mapping.quantity,
+              cn_price: mapping.cn_price,
+              cn_product_image_url: mapping.cn_image_url,
+              mapping_confidence: 0.0, // Low confidence - needs manual verification
+              mapping_method: "auto_partial",
+              mapping_notes: `Partial mapping auto-created during order ${mapping.orderId} approval. CN Product: ${mapping.productName}. Awaiting Amazon SKU/ASIN assignment.`,
+              is_verified: false,
+            },
+          });
+        } catch (mappingError) {
+          console.error(`Failed to create mapping for product ${mapping.cn_product_id}:`, mappingError);
+          // Continue with other products even if one fails
+        }
+      }
+    }
+
+    // Update order approval status for all items in this order
     const updatedOrder = await prisma.orders_by_products.updateMany({
       where: {
-        baseInfo_id: BigInt(orderId).toString(),
+        baseInfo_id: parseFloat(orderId),
       },
       data: {
         approved_: approved,
@@ -503,7 +675,7 @@ export async function updateOrderApproval(orderId: string, approved: boolean) {
   }
 }
 
-// Bulk update order approval status
+// Bulk update with stock management
 export async function bulkUpdateOrderApproval(
   orderIds: string[],
   approved: boolean
@@ -513,26 +685,43 @@ export async function bulkUpdateOrderApproval(
       return { success: false, error: "Invalid request data" };
     }
 
-    // Convert string array to BigInt array for baseInfo_id comparison
-    // const bigIntOrderIds = orderIds.map(id => Number(id));
-    // console.log('Bulk updating orders:', bigIntOrderIds, 'to approved:', approved, orderIds);
+    if (orderIds.length === 0) {
+      return { success: false, error: "No orders selected" };
+    }
 
-    const updatedOrders = await prisma.orders_by_products.updateMany({
-      where: {
-        baseInfo_idOfStr: {
-          in: orderIds,
-        },
-      },
-      data: {
-        approved_: approved,
-      },
-    });
+    let totalUpdatedItems = 0;
+    const failedOrders = [];
+
+    // Process each order individually to properly handle stock management
+    for (const orderId of orderIds) {
+      try {
+        const result = await updateOrderApproval(orderId, approved);
+        if (result.success) {
+          totalUpdatedItems += result.count || 0;
+        } else {
+          failedOrders.push({ orderId, error: result.error });
+        }
+      } catch (orderError) {
+        console.error(`Error processing order ${orderId}:`, orderError);
+        failedOrders.push({ orderId, error: "Processing failed" });
+      }
+    }
 
     revalidatePath("/orders");
+
+    if (failedOrders.length > 0) {
+      return {
+        success: true, // Partial success
+        message: `Updated ${totalUpdatedItems} items with ${failedOrders.length} orders failed`,
+        count: totalUpdatedItems,
+        failedOrders,
+      };
+    }
+
     return {
       success: true,
-      message: `${updatedOrders.count} order items updated successfully`,
-      count: updatedOrders.count,
+      message: `${totalUpdatedItems} order items updated successfully`,
+      count: totalUpdatedItems,
     };
   } catch (error) {
     console.error("Error bulk updating orders:", error);
@@ -547,6 +736,7 @@ interface BuyerStatistic {
   baseInfo_buyerContact_companyName: string;
   _count: { id: number };
   _sum: { baseInfo_totalAmount: number };
+  orderIds: Set<string>;
 }
 
 // Get comprehensive order statistics
@@ -749,13 +939,13 @@ export async function getProductDetails(productId: string) {
     // Serialize the product details
     const serializedProduct = product
       ? {
-          productID: product.productID.toString(),
-          name: product.name,
-          price: Number(product.price),
-          productImgUrl: product.productImgUrl,
-          productSnapshotUrl: product.productSnapshotUrl,
-          unit: product.unit,
-        }
+        productID: product.productID.toString(),
+        name: product.name,
+        price: Number(product.price),
+        productImgUrl: product.productImgUrl,
+        productSnapshotUrl: product.productSnapshotUrl,
+        unit: product.unit,
+      }
       : null;
 
     const serializedRelatedOrders = relatedOrders.map((order) => ({

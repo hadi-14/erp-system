@@ -522,9 +522,16 @@ export async function createTransit(data: {
   }
 }
 
+// Type for transit status update data
+interface TransitStatusUpdateData {
+  status: string;
+  shipped_date?: Date;
+  received_date?: Date;
+}
+
 export async function updateTransitStatus(id: number, status: string) {
   try {
-    const updates: any = { status };
+    const updates: TransitStatusUpdateData = { status };
     
     if (status === 'in_transit') {
       updates.shipped_date = new Date();

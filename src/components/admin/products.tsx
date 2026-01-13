@@ -7,7 +7,7 @@ import { createProduct, updateProduct, deleteProduct, bulkImportProducts, getPro
 import { products as ProductType } from "@prisma/client";
 import * as XLSX from 'xlsx'
 
-type NewProduct = Omit<ProductType, "id" | "createdAt">;
+type NewProduct = Omit<ProductType, "id" | "createdAt" | "updatedAt">;
 
 // const initialProduct: NewProduct = {
 //   sku: '',

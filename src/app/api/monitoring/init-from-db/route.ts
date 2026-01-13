@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'All ASINs already initialized, ran monitoring only',
         processed: monitoringResult.processed || 0,
-        alertsCreated: monitoringResult.alertsCreated || 0,
+        alertsCreated: monitoringResult.rankAlertsCreated || 0,
         alreadyInitialized: uniqueASINs.length
       });
     }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       successRate: Math.round((totalProcessed / asinsToProcess.length) * 100),
       monitoring: {
         processed: monitoringResult.processed || 0,
-        alertsCreated: monitoringResult.alertsCreated || 0
+        alertsCreated: monitoringResult.rankAlertsCreated || 0
       }
     });
 
@@ -130,7 +130,7 @@ async function fetchUniqueASINsFromDB(): Promise<string[]> {
       },
       where: {
         Product_Identifiers_MarketplaceASIN_ASIN: {
-          not: null
+          not: undefined
         }
       }
     });
@@ -142,7 +142,7 @@ async function fetchUniqueASINsFromDB(): Promise<string[]> {
       },
       where: {
         Product_Identifiers_MarketplaceASIN_ASIN: {
-          not: null
+          not: undefined
         }
       }
     });

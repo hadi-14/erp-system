@@ -12,19 +12,53 @@ interface StockItemForm {
   reorder_level: string;
 }
 
+interface Rack {
+  id: number;
+  warehouse_id: number;
+  code: string;
+  level: number;
+  capacity: number;
+  available_space: number;
+  status: 'active' | 'inactive';
+}
+
+interface Warehouse {
+  id: number;
+  name: string;
+  code: string;
+  location: string;
+  status: 'active' | 'inactive' | 'maintenance';
+  capacity: number;
+  available_space: number;
+  racks?: Rack[];
+}
+
+interface StockItem {
+  id: number;
+  sku: string;
+  warehouse_id: number;
+  rack_id: number | null;
+  quantity: number;
+  available_quantity: number;
+  reorder_level: number;
+  status: 'in_stock' | 'low_stock' | 'out_of_stock';
+  warehouse?: Warehouse;
+  rack?: Rack;
+}
+
 export default function StockDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [stockItems, setStockItems] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [filterWarehouse, setFilterWarehouse] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [error, setError] = useState('');
-  const [racks, setRacks] = useState<any[]>([]);
+  const [racks, setRacks] = useState<Rack[]>([]);
 
   const [formData, setFormData] = useState<StockItemForm>({
     sku: '',
@@ -50,12 +84,13 @@ export default function StockDashboard() {
         getWarehouses(),
         getStockItems()
       ]);
-      setWarehouses(w);
-      setStockItems(s);
-      
+      const warehouses = w as Warehouse[];
+      setWarehouses(warehouses);
+      setStockItems(s as StockItem[]);
+
       // Extract racks from warehouses
-      const allRacks: any[] = [];
-      w.forEach(warehouse => {
+      const allRacks: Rack[] = [];
+      warehouses.forEach((warehouse) => {
         if (warehouse.racks) {
           allRacks.push(...warehouse.racks);
         }
@@ -190,14 +225,14 @@ export default function StockDashboard() {
     }
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = (item: StockItem) => {
     setSelectedItem(item);
     setEditData({ quantity: item.quantity.toString(), reason: '' });
     setShowEditModal(true);
     setError('');
   };
 
-  const openDeleteModal = (item: any) => {
+  const openDeleteModal = (item: StockItem) => {
     setSelectedItem(item);
     setShowDeleteModal(true);
     setError('');
@@ -254,8 +289,8 @@ export default function StockDashboard() {
             <button
               onClick={() => setActiveTab('overview')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition-colors ${activeTab === 'overview'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
             >
               Overview
@@ -263,8 +298,8 @@ export default function StockDashboard() {
             <button
               onClick={() => setActiveTab('stock')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition-colors ${activeTab === 'stock'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
             >
               Stock Items
@@ -272,8 +307,8 @@ export default function StockDashboard() {
             <button
               onClick={() => setActiveTab('bulk')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition-colors ${activeTab === 'bulk'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
             >
               Bulk Operations
@@ -281,8 +316,8 @@ export default function StockDashboard() {
             <button
               onClick={() => setActiveTab('warehouses')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition-colors ${activeTab === 'warehouses'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
             >
               Warehouses
@@ -373,8 +408,8 @@ export default function StockDashboard() {
                       <td className="px-6 py-4 text-sm text-gray-600">{item.reorder_level}</td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${item.status === 'in_stock' ? 'bg-green-100 text-green-800' :
-                            item.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
+                          item.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
                           }`}>
                           {item.status}
                         </span>
@@ -476,8 +511,8 @@ export default function StockDashboard() {
                       <p className="text-sm text-gray-600 mt-1">Code: {warehouse.code}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${warehouse.status === 'active' ? 'bg-green-100 text-green-800' :
-                        warehouse.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                          'bg-yellow-100 text-yellow-800'
+                      warehouse.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                        'bg-yellow-100 text-yellow-800'
                       }`}>
                       {warehouse.status}
                     </span>
@@ -696,8 +731,8 @@ export default function StockDashboard() {
                     <p className="text-sm pt-2 border-t border-blue-200">
                       <span className="text-gray-600">Difference:</span>
                       <span className={`font-semibold ml-2 ${parseInt(editData.quantity) > selectedItem.quantity ? 'text-green-600' :
-                          parseInt(editData.quantity) < selectedItem.quantity ? 'text-red-600' :
-                            'text-gray-600'
+                        parseInt(editData.quantity) < selectedItem.quantity ? 'text-red-600' :
+                          'text-gray-600'
                         }`}>
                         {parseInt(editData.quantity) > selectedItem.quantity ? '+' : ''}{parseInt(editData.quantity) - selectedItem.quantity}
                       </span>

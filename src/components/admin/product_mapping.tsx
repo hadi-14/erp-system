@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { Search, Plus, Check, Eye, Edit, Trash2, ArrowLeftRight, Image as LucideImage, DollarSign, Package, Zap, Download, Upload, X, AlertTriangle, CheckCircle, Info, Calendar } from 'lucide-react';
-import { getAmazonProducts, get1688Products, getMappings, editMapping, createMapping } from '@/actions/admin/product_mappings';
+import { getAmazonProducts, get1688Products, getMappings, editMapping, createMapping, deleteMapping as deleteMappingAction } from '@/actions/admin/product_mappings';
 import { order_mappings as OrderMapping, product_list_en as CNProduct, AMZN_PRODUCT_LIST as AmznProduct } from '@prisma/client';
 
 // Toast notification component
@@ -483,22 +483,26 @@ export default function AdvancedProductMappingPage() {
   }, [cnProducts, amznProducts, smartMatchSettings, calculateSimilarity, addToast]);
 
   // Helper to check if mapping already exists
-  const mappingExists = useCallback((cnProductId: string, amznProductId: string) => {
+  const mappingExists = useCallback((cnProductId: string, amznIdentifier: string) => {
     return mappings.some(
       m =>
         String(m.cn_product_id) === String(cnProductId) &&
-        String(m.id) === String(amznProductId) // Using Amazon product ID as main mapping ID
+        (
+          String(m.amzn_sku) === String(amznIdentifier) ||
+          String(m.amzn_asin) === String(amznIdentifier)
+        )
     );
   }, [mappings]);
 
   const acceptSuggestion = useCallback(async (suggestion: SmartSuggestion): Promise<void> => {
-    if (mappingExists(String(suggestion.cnProduct.productID), String(suggestion.amznProduct.product_id))) {
+    // Check for existing mapping by CN product and Amazon SKU/ASIN
+    if (mappingExists(String(suggestion.cnProduct.productID), suggestion.amznProduct.seller_sku ?? suggestion.amznProduct.asin1)) {
       addToast('error', 'Duplicate Mapping', 'A mapping for these products already exists');
       return;
     }
 
-    const newMapping: OrderMapping = {
-      id: BigInt(suggestion.amznProduct.product_id), // Using Amazon product ID as main mapping ID
+    // Build payload without specifying `id` (DB will autoincrement). Avoid calling BigInt on non-numeric ASIN/product ids.
+    const mappingPayload: Omit<OrderMapping, 'id'> = {
       custom_sku: suggestion.amznProduct.seller_sku,
       cn_order_id: null,
       cn_product_id: suggestion.cnProduct.productID,
@@ -516,7 +520,8 @@ export default function AdvancedProductMappingPage() {
       amzn_sku: suggestion.amznProduct.seller_sku,
       amzn_asin: suggestion.amznProduct.asin1,
       amzn_product_name: suggestion.amznProduct.item_name,
-      amzn_quantity: BigInt(suggestion.amznProduct.quantity ?? 0),
+      // `amzn_quantity` is an Int in the schema — use Number(), not BigInt
+      amzn_quantity: Number(suggestion.amznProduct.quantity ?? 0),
       amzn_item_price: suggestion.amznProduct.price,
       amzn_currency: 'USD',
       amzn_order_status: suggestion.amznProduct.status,
@@ -538,15 +543,18 @@ export default function AdvancedProductMappingPage() {
     };
 
     try {
-      const result = await createMapping(newMapping);
-      if (result.success) {
-        setMappings(prev => [newMapping, ...prev]);
+      const result = await createMapping(mappingPayload);
+      if (result.success && result.mapping) {
+        const created = result.mapping;
+        // Use the server-returned mapping (has assigned id) for UI
+        setMappings(prev => [created, ...prev]);
         setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
-        addToast('success', 'Mapping Created', `Successfully created mapping with SKU: ${newMapping.custom_sku}`);
+        addToast('success', 'Mapping Created', `Successfully created mapping with SKU: ${created.custom_sku}`);
       } else {
         addToast('error', 'Creation Failed', 'Failed to create mapping');
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       addToast('error', 'Creation Error', 'An error occurred while creating the mapping');
     }
   }, [mappingExists, addToast]);
@@ -575,10 +583,21 @@ export default function AdvancedProductMappingPage() {
     showConfirmModal(
       'Delete Mapping',
       `Are you sure you want to delete the mapping for ${mapping.custom_sku}? This action cannot be undone.`,
-      () => {
-        setMappings(prev => prev.filter(m => Number(m.id) !== mappingId));
-        addToast('success', 'Mapping Deleted', 'The mapping has been successfully deleted');
-        closeConfirmModal();
+      async () => {
+        try {
+          const result = await deleteMappingAction(Number(mapping.id));
+          if (result.success) {
+            setMappings(prev => prev.filter(m => Number(m.id) !== mappingId));
+            addToast('success', 'Mapping Deleted', 'The mapping has been successfully deleted');
+          } else {
+            addToast('error', 'Deletion Failed', 'Failed to delete mapping');
+          }
+        } catch (err) {
+          console.error('Delete mapping error:', err);
+          addToast('error', 'Deletion Error', 'An error occurred while deleting the mapping');
+        } finally {
+          closeConfirmModal();
+        }
       },
       'danger'
     );
@@ -648,7 +667,7 @@ export default function AdvancedProductMappingPage() {
   };
 
   return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       {/* Toast Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 

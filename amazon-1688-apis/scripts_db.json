@@ -1,0 +1,44 @@
+{
+  "site1688": {
+    "name": "site1688",
+    "status": "failed",
+    "progress": 10,
+    "lastExecution": "2026-01-03T16:17:32.080267",
+    "nextRun": null,
+    "alerts": [
+      "Traceback (most recent call last):\n  File \"/root/erp-system/amazon-1688-apis/site1688.py\", line 55, in <module>\n    df = get_orders(token, pageSize=50, createStartTime=formattedStartDate, createEndTim"
+    ]
+  },
+  "transform": {
+    "name": "transform",
+    "status": "completed",
+    "progress": 100,
+    "lastExecution": "2025-12-31T20:34:23.401199",
+    "nextRun": null,
+    "alerts": []
+  },
+  "translate": {
+    "name": "translate",
+    "status": "running",
+    "progress": 10,
+    "lastExecution": null,
+    "nextRun": null,
+    "alerts": []
+  },
+  "amazon": {
+    "name": "amazon",
+    "status": "running",
+    "progress": 10,
+    "lastExecution": null,
+    "nextRun": null,
+    "alerts": []
+  },
+  "amazon_ratings_scraper": {
+    "name": "amazon_ratings_scraper",
+    "status": "running",
+    "progress": 10,
+    "lastExecution": null,
+    "nextRun": null,
+    "alerts": []
+  }
+}

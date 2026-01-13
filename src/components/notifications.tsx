@@ -15,19 +15,25 @@ import {
 interface PriceAlert {
   id: number;
   asin: string;
-  seller_sku?: string;
-  product_name?: string;
+  seller_sku: string | null;
+  product_name: string | null;
   old_price: number;
   new_price: number;
   price_change: number;
   price_change_percent: number;
   currency: string;
-  alert_type: 'price_increase' | 'price_decrease' | 'significant_change';
-  competitor_name?: string;
+  alert_type: string;
+  competitor_name: string | null;
   is_read: boolean;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  created_at: string;
-  threshold_triggered?: number;
+  priority: string;
+  created_at: Date;
+  threshold_triggered: number | null;
+  isRankAlert: boolean;
+  ourRank?: number;
+  competitorRank?: number;
+  rankDifference?: number;
+  is_dismissed: boolean;
+  dismissed_at: Date | null;
 }
 
 interface AlertCounts {
@@ -50,8 +56,8 @@ const PriceAlertsNotification: React.FC = () => {
     try {
       const result = await getPriceAlerts(currentFilter || filter);
       if (result.success) {
-        setAlerts(result.alerts);
-        setCounts(result.counts);
+        setAlerts(result.alerts ?? []);
+        setCounts(result.counts ?? { total: 0, unread: 0, highPriority: 0 });
       }
     } catch (error) {
       console.error('Failed to load alerts:', error);
@@ -179,13 +185,13 @@ const PriceAlertsNotification: React.FC = () => {
   const navigateToProduct = (alert: PriceAlert) => {
     const params = new URLSearchParams();
     params.set('tab', 'competitive-pricing');
-    
+
     if (alert.seller_sku) {
       params.set('sku', alert.seller_sku);
     } else if (alert.asin) {
       params.set('asin', alert.asin);
     }
-    
+
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.location.href = newUrl;
   };
@@ -212,10 +218,10 @@ const PriceAlertsNotification: React.FC = () => {
     }
   };
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatTimeAgo = (date: Date | string) => {
+    const parsedDate = typeof date === 'string' ? new Date(date) : date;
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = now.getTime() - parsedDate.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -321,7 +327,7 @@ const PriceAlertsNotification: React.FC = () => {
                 ].map(({ key, label }) => (
                   <button
                     key={key}
-                    onClick={() => setFilter(key as any)}
+                    onClick={() => setFilter(key as 'all' | 'unread' | 'high_priority')}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filter === key
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-100'
