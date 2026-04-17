@@ -1,0 +1,1 @@
+0 9 * * * ~/erp-system/amazon-1688-apis/venv/bin/python ~/erp-system/amazon-1688-apis/sheduleAll.py >> ~/erp-system/amazon-1688-apis/logs/schedule.log 2>&1

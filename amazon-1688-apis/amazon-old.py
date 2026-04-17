@@ -167,7 +167,7 @@ def get_orders(start, end):
 
     df = pd.json_normalize(orders_list)
     df.to_excel("orders.xlsx", index=False)
-    dump_to_sql(df, "AMZN_orders", date_col="PurchaseDate", safe_drop=False)
+    dump_to_sql(df, "AMZN_orders", date_col="PurchaseDate")
     print(f"Orders saved to orders.xlsx with {len(df)} rows.")
     return df
 
@@ -208,7 +208,7 @@ def fetch_order_items(order_df):
             all_items.append(item)
 
     order_items_df = pd.json_normalize(all_items)
-    dump_to_sql(order_items_df, "AMZN_orders_items", ids_col='OrderItemId', safe_drop=False)
+    dump_to_sql(order_items_df, "AMZN_orders_items", ids_col='OrderItemId')
     return order_items_df
 
 
@@ -237,7 +237,7 @@ def get_inventory():
 
     df = pd.json_normalize(inventory_list)
     df.to_excel("inventory.xlsx", index=False)
-    dump_to_sql(df, "AMZN_inventory", safe_drop=False)
+    dump_to_sql(df, "AMZN_inventory")
     print(f"Inventory saved to inventory.xlsx with {len(df)} rows.")
     return df
 
@@ -245,11 +245,7 @@ def get_inventory():
 def process_competitive_pricing_data(df):
     """Process competitive pricing data to match Prisma schema structure."""
     
-    # Keep the original DataFrame with DOTS - don't rename anything
-    df = df.copy()
-    
     # 1. Create main competitive pricing table with unique identifiers
-    # Use DOT column names - these match the actual database columns
     main_columns = [
         'SellerSKU', 'status',
         'Product.Identifiers.SKUIdentifier.MarketplaceId',
@@ -275,7 +271,6 @@ def process_competitive_pricing_data(df):
         temp_id = idx  # Use dataframe index as temporary ID
         seller_sku = row.get('SellerSKU', '')
         
-        # Use DOT column names
         if 'Product.SalesRankings' in df.columns.to_list():
             rankings = row['Product.SalesRankings']
             if isinstance(rankings, list):
@@ -297,7 +292,6 @@ def process_competitive_pricing_data(df):
         temp_id = idx  # Use dataframe index as temporary ID
         seller_sku = row.get('SellerSKU', '')
 
-        # Use DOT column names
         if 'Product.CompetitivePricing.NumberOfOfferListings' in df.columns.to_list():
             listings = row['Product.CompetitivePricing.NumberOfOfferListings']
             if isinstance(listings, list):
@@ -319,7 +313,6 @@ def process_competitive_pricing_data(df):
         temp_id = idx  # Use dataframe index as temporary ID
         seller_sku = row.get('SellerSKU', '')
         
-        # Use DOT column names
         if 'Product.CompetitivePricing.CompetitivePrices' in df.columns.to_list():
             prices = row['Product.CompetitivePricing.CompetitivePrices']
             if isinstance(prices, list):
@@ -354,191 +347,98 @@ def process_competitive_pricing_data(df):
         'competitive_prices': competitive_prices_df
     }
 
-
 def save_competitive_pricing_data(processed_data, prefix=""):
-    """Save processed competitive pricing data to database - APPENDING to existing data instead of replacing."""
+    """Save processed competitive pricing data to database with proper foreign key handling."""
     
-    # Disable foreign key constraints at the beginning
-    try:
-        with engine.connect() as conn:
-            # Try PostgreSQL first
-            try:
-                from sqlalchemy.sql import text
-                conn.execute(text("SET session_replication_role = 'replica';"))
-                conn.commit()
-                print("✅ Foreign key constraints disabled (PostgreSQL)")
-                db_type = 'postgresql'
-            except:
-                # Try MySQL
-                try:
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS=0;"))
-                    conn.commit()
-                    print("✅ Foreign key constraints disabled (MySQL)")
-                    db_type = 'mysql'
-                except:
-                    # Try SQLite
-                    try:
-                        conn.execute(text("PRAGMA foreign_keys = OFF;"))
-                        conn.commit()
-                        print("✅ Foreign key constraints disabled (SQLite)")
-                        db_type = 'sqlite'
-                    except Exception as e:
-                        print(f"⚠️  Could not disable foreign key constraints: {e}")
-                        db_type = 'unknown'
-    except Exception as e:
-        print(f"⚠️  Error managing foreign key constraints: {e}")
-        db_type = 'unknown'
+    # Save main table first and get the actual database IDs
+    main_df = processed_data['main'].copy()
     
-    try:
-        # Save main table first
-        main_df = processed_data['main'].copy()
+    if not main_df.empty:
+        # Remove the temp_id before saving to database
+        temp_ids = main_df['temp_id'].tolist()
+        main_df = main_df.drop('temp_id', axis=1)
         
-        if not main_df.empty:
-            # Remove the temp_id before saving to database
-            main_df = main_df.drop('temp_id', axis=1)
-            
-            # Print column names for debugging
-            print(f"📋 DataFrame columns: {main_df.columns.tolist()}")
-            
-            # APPEND to existing data instead of replacing
-            table_name = f"AMZN_competitive_pricing_main{prefix}"
-            
-            # For large datasets, use method='multi' for bulk insert which is more efficient
-            # and set chunksize to avoid parameter limits
-            try:
-                # Check if table exists
-                from sqlalchemy import inspect
-                inspector = inspect(engine)
-                table_exists = table_name in inspector.get_table_names()
-                
-                if not table_exists:
-                    # Create table structure if it doesn't exist
-                    main_df.iloc[:0].to_sql(table_name, con=engine, if_exists='replace', index=False)
-                    print(f"✅ Created table structure for {table_name}")
-                
-                # Insert data in chunks using method='multi' for better performance
-                chunk_size = 50  # Smaller chunks to avoid parameter limit
-                total_chunks = (len(main_df) - 1) // chunk_size + 1
-                
-                for i in range(0, len(main_df), chunk_size):
-                    chunk = main_df.iloc[i:i+chunk_size]
-                    chunk.to_sql(
-                        table_name, 
-                        con=engine, 
-                        if_exists='append',  # CHANGED: Always append
-                        index=False,
-                        method='multi',
-                        chunksize=10  # Internal pandas chunking
-                    )
-                    print(f"✅ Appended chunk {i//chunk_size + 1}/{total_chunks} ({len(chunk)} rows)")
-                
-                print(f"✅ Main competitive pricing data appended: {len(main_df)} total records")
-                
-            except Exception as e:
-                print(f"❌ Error saving main table: {e}")
-                print(f"Attempting alternative method...")
-                
-                # Fallback: use iterrows for maximum compatibility
-                try:
-                    # Create table structure first if needed
-                    from sqlalchemy import inspect
-                    inspector = inspect(engine)
-                    if table_name not in inspector.get_table_names():
-                        main_df.iloc[:0].to_sql(table_name, con=engine, if_exists='replace', index=False)
-                    
-                    # Insert row by row (slower but more reliable)
-                    from sqlalchemy import MetaData, Table
-                    metadata = MetaData()
-                    metadata.reflect(bind=engine)
-                    table = metadata.tables[table_name]
-                    
-                    with engine.begin() as conn:
-                        for idx, row in main_df.iterrows():
-                            conn.execute(table.insert().values(**row.to_dict()))
-                            if (idx + 1) % 100 == 0:
-                                print(f"✅ Inserted {idx + 1}/{len(main_df)} rows")
-                    
-                    print(f"✅ Main data saved using fallback method: {len(main_df)} records")
-                    
-                except Exception as e2:
-                    print(f"❌ Fallback method also failed: {e2}")
-                    raise
+        # Clear existing data and save main table
+        table_name = f"AMZN_competitive_pricing_main{prefix}"  # Store table name
+        dump_to_sql(main_df, table_name, safe_drop=True)
+        print(f"✅ Main competitive pricing data saved: {len(main_df)} records")
         
-        # Save child tables - APPENDING instead of replacing
-        for table_name_suffix, df_data in [
-            ("sales_rankings", processed_data['sales_rankings']),
-            ("offer_listings", processed_data['offer_listings']),
-            ("competitive_prices", processed_data['competitive_prices'])
-        ]:
-            
-            if not df_data.empty:
-                df_copy = df_data.copy()
-                
-                # Drop temp_id column and use seller_sku as reference
-                df_copy = df_copy.drop('temp_id', axis=1)
-                
-                # Add a placeholder foreign key ID (since we're ignoring constraints anyway)
-                # This keeps the schema consistent but the FK won't be enforced
-                df_copy['competitive_pricing_main_id'] = 0  # Placeholder value
-                
-                table_name = f"AMZN_{table_name_suffix}{prefix}"
-                
-                # Use same chunking strategy
-                try:
-                    # Check if table exists
-                    from sqlalchemy import inspect
-                    inspector = inspect(engine)
-                    table_exists = table_name in inspector.get_table_names()
-                    
-                    if not table_exists:
-                        # Create table structure
-                        df_copy.iloc[:0].to_sql(table_name, con=engine, if_exists='replace', index=False)
-                        print(f"✅ Created table structure for {table_name}")
-                    
-                    chunk_size = 50
-                    total_chunks = (len(df_copy) - 1) // chunk_size + 1
-                    
-                    for i in range(0, len(df_copy), chunk_size):
-                        chunk = df_copy.iloc[i:i+chunk_size]
-                        chunk.to_sql(
-                            table_name,
-                            con=engine,
-                            if_exists='append',  # CHANGED: Always append
-                            index=False,
-                            method='multi',
-                            chunksize=10
-                        )
-                        if total_chunks > 1:
-                            print(f"✅ {table_name_suffix}: chunk {i//chunk_size + 1}/{total_chunks}")
-                    
-                    print(f"✅ {table_name_suffix.replace('_', ' ').title()} data appended: {len(df_copy)} records")
-                    
-                except Exception as e:
-                    print(f"❌ Error saving {table_name_suffix}: {e}")
-                    # Continue with other tables
-                    continue
-    
-    finally:
-        # Re-enable foreign key constraints
+        # Get the actual database IDs after insertion
         try:
+            from sqlalchemy.sql import text
+            
+            # Read back the inserted data with database-generated IDs
+            # CRITICAL FIX: Use the correct table name with prefix
             with engine.connect() as conn:
-                from sqlalchemy.sql import text
-                if db_type == 'postgresql':
-                    conn.execute(text("SET session_replication_role = 'origin';"))
-                    conn.commit()
-                    print("✅ Foreign key constraints re-enabled (PostgreSQL)")
-                elif db_type == 'mysql':
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS=1;"))
-                    conn.commit()
-                    print("✅ Foreign key constraints re-enabled (MySQL)")
-                elif db_type == 'sqlite':
-                    conn.execute(text("PRAGMA foreign_keys = ON;"))
-                    conn.commit()
-                    print("✅ Foreign key constraints re-enabled (SQLite)")
+                query = text(f'SELECT id, "SellerSKU", "created_at" FROM "{table_name}" ORDER BY "id"')
+                result = conn.execute(query)
+                db_rows = result.fetchall()
+                
+            print(f"Retrieved {len(db_rows)} records from database for ID mapping")
+                
+            # Create mapping from temp_id to actual database ID
+            id_mapping = {}
+            for i, (db_id, seller_sku, created_at) in enumerate(db_rows):
+                for temp_index, temp_id in enumerate(temp_ids):
+                    if temp_index == i:
+                        id_mapping[temp_id] = db_id
+                        break
+                        
+            print(f"Created ID mapping for {len(id_mapping)} records")
+                            
         except Exception as e:
-            print(f"⚠️  Could not re-enable foreign key constraints: {e}")
-
-
+            print(f"Error retrieving database IDs for foreign key mapping: {e}")
+            print(f"Error type: {type(e)}")
+            
+            # Alternative approach using pandas
+            try:
+                print("Trying alternative approach using pandas...")
+                # CRITICAL FIX: Use the correct table name with prefix
+                saved_df = pd.read_sql_table(table_name, con=engine)
+                
+                if len(saved_df) != len(main_df):
+                    print(f"Warning: Row count mismatch. Expected {len(main_df)}, got {len(saved_df)}")
+                
+                # Create mapping based on order
+                id_mapping = {}
+                for i, row in saved_df.iterrows():
+                    if i < len(temp_ids):
+                        for temp_index, temp_id in enumerate(temp_ids):
+                            if temp_index == i:
+                                id_mapping[temp_id] = row['id']
+                                break
+                
+                print(f"Alternative method: Created ID mapping for {len(id_mapping)} records")
+                
+            except Exception as e2:
+                print(f"Alternative approach also failed: {e2}")
+                print("Cannot proceed with child table inserts - foreign key mapping failed")
+                return
+    
+    # Save child tables with proper foreign key references
+    for table_name, df_data in [
+        ("sales_rankings", processed_data['sales_rankings']),
+        ("offer_listings", processed_data['offer_listings']),
+        ("competitive_prices", processed_data['competitive_prices'])
+    ]:
+        
+        if not df_data.empty:
+            # Replace temp_id with actual database ID
+            df_copy = df_data.copy()
+            df_copy['competitive_pricing_main_id'] = df_copy['temp_id'].map(id_mapping)
+            
+            # Remove rows where mapping failed
+            df_copy = df_copy.dropna(subset=['competitive_pricing_main_id'])
+            df_copy = df_copy.drop('temp_id', axis=1)
+            
+            # Convert to integer type
+            df_copy['competitive_pricing_main_id'] = df_copy['competitive_pricing_main_id'].astype(int)
+            
+            if not df_copy.empty:
+                dump_to_sql(df_copy, f"AMZN_{table_name}{prefix}", safe_drop=True)
+                print(f"✅ {table_name.replace('_', ' ').title()} data saved: {len(df_copy)} records")
+            else:
+                print(f"⚠️  No {table_name} data to save after ID mapping")
 
 
 def get_processed_orders():
@@ -705,10 +605,10 @@ def process_and_deduct_stock():
                 existing_df = pd.read_sql_table("processed_orders", con=engine)
                 combined_df = pd.concat([existing_df, processed_order_ids], ignore_index=True)
                 combined_df = combined_df.drop_duplicates(subset=['amazon_order_id'])
-                dump_to_sql(combined_df, "processed_orders", safe_drop=False)  # CHANGED: safe_drop=False
+                dump_to_sql(combined_df, "processed_orders", safe_drop=True)
             else:
                 # Create new table
-                dump_to_sql(processed_order_ids, "processed_orders", safe_drop=False)  # CHANGED: safe_drop=False
+                dump_to_sql(processed_order_ids, "processed_orders", safe_drop=True)
         except:
             # Table doesn't exist, create it
             dump_to_sql(processed_order_ids, "processed_orders", safe_drop=False)
@@ -738,10 +638,10 @@ def get_competitive_prices():
     """Fetch and process competitive pricing data for SKUs and competitor ASINs."""
     # Get SKUs from existing data
     skus = pd.read_sql_table(
-        "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", 
+        "AMZN_PRODUCT_LIST", 
         con=engine, 
-        columns=['sku']
-    )['sku'].unique().tolist()
+        columns=['seller-sku']
+    )['seller-sku'].unique().tolist()
     # skus = ['B07ZG5NTPJ']
     
     df = pd.DataFrame()
@@ -892,7 +792,7 @@ if __name__ == "__main__":
     df = get_bulk_reports("GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", startDate, endDate)
     df['purchase-date'] = pd.to_datetime(df['purchase-date'])
     df['last-updated-date'] = pd.to_datetime(df['last-updated-date'])
-    dump_to_sql(df, "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", date_col="purchase-date", safe_drop=False)
+    dump_to_sql(df, "AMZN_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_GENERAL", date_col="purchase-date")
     
     process_and_deduct_stock()       
     
@@ -904,21 +804,21 @@ if __name__ == "__main__":
     # Order reports
     # permission error
     # df = get_bulk_reports("GET_FLAT_FILE_ORDER_REPORT_DATA_SHIPPING", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_ORDER_REPORT_DATA_SHIPPING", date_col="purchase-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_ORDER_REPORT_DATA_SHIPPING", date_col="purchase-date")
     
     # No Data
     # df = get_bulk_reports("GET_FLAT_FILE_PENDING_ORDERS_DATA", startDate, endDate)
     # df['purchase-date'] = pd.to_datetime(df['purchase-date'])
     # df['last-updated-date'] = pd.to_datetime(df['last-updated-date'])
-    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_PENDING_ORDERS_DATA", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_PENDING_ORDERS_DATA")
 
 
     df = get_single_report("GET_FLAT_FILE_OPEN_LISTINGS_DATA")
-    dump_to_sql(df, "AMZN_GET_FLAT_FILE_OPEN_LISTINGS_DATA", safe_drop=False)
+    dump_to_sql(df, "AMZN_GET_FLAT_FILE_OPEN_LISTINGS_DATA")
 
     df = get_bulk_reports("GET_MERCHANT_LISTINGS_ALL_DATA", startDate, endDate)
     df['open-date'] = pd.to_datetime(df['open-date'])
-    dump_to_sql(df, "AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", date_col="open-date", safe_drop=False)
+    dump_to_sql(df, "AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", date_col="open-date")
 
     # === Amazon ===
     df = pd.read_sql_table("AMZN_GET_MERCHANT_LISTINGS_ALL_DATA", engine)
@@ -938,7 +838,7 @@ if __name__ == "__main__":
         "asin1",
         "asin2",
         "asin3",
-        "item-condition",
+        "item-condition", 
         "zshop-category1",
         "zshop-browse-path",
         "zshop-storefront-feature",
@@ -950,56 +850,57 @@ if __name__ == "__main__":
 
 
     products_df = df[product_cols]
-    products_df["price"] = products_df["price"]
+    products_df = products_df.drop_duplicates()
     products_df = products_df.drop_duplicates(subset=["listing-id"])
+    products_df['price'] = products_df['price'].fillna(0).astype(float)
     products_df.reset_index(drop=True, inplace=True)
-    dump_to_sql(products_df, "AMZN_PRODUCT_LIST", safe_drop=False)  # CHANGED: safe_drop=False
+    dump_to_sql(products_df, "AMZN_PRODUCT_LIST", safe_drop=True)
 
     get_competitive_prices()
     
     
     # No Data
     # df = get_bulk_reports("GET_EASYSHIP_DOCUMENTS", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_EASYSHIP_DOCUMENTS", date_col="last-updated-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_EASYSHIP_DOCUMENTS", date_col="last-updated-date")
 
     df = get_bulk_reports("GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL", startDate, endDate)
     df["purchase-date"] = pd.to_datetime(df["purchase-date"])
     df["payments-date"] = pd.to_datetime(df["payments-date"])
     df["shipment-date"] = pd.to_datetime(df["shipment-date"])
     df["reporting-date"] = pd.to_datetime(df["reporting-date"])
-    dump_to_sql(df, "AMZN_GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL", date_col="shipment-date", safe_drop=False)
+    dump_to_sql(df, "AMZN_GET_AMAZON_FULFILLED_SHIPMENTS_DATA_GENERAL", date_col="shipment-date")
     
     df = get_bulk_reports("GET_FBA_FULFILLMENT_CUSTOMER_SHIPMENT_SALES_DATA", startDate, endDate)
     df['shipment-date'] = pd.to_datetime(df['shipment-date'])
-    dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_SHIPMENT_SALES_DATA", date_col="shipment-date", safe_drop=False)
+    dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_SHIPMENT_SALES_DATA", date_col="shipment-date")
 
     # 'processingStatus': 'FATAL'
     # df = get_bulk_reports("GET_FBA_FULFILLMENT_CUSTOMER_TAXES_DATA", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_TAXES_DATA", date_col="last-updated-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_TAXES_DATA", date_col="last-updated-date")
 
 
     # Permission Required
     # df = get_bulk_reports("GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE_V2", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE_V2", date_col="last-updated-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_V2_SETTLEMENT_REPORT_DATA_FLAT_FILE_V2", date_col="last-updated-date")
 
     # Permission Required
     # df = get_bulk_reports("GET_DATE_RANGE_FINANCIAL_HOLDS_DATA", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_TAXES_DATA", date_col="last-updated-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_FBA_FULFILLMENT_CUSTOMER_TAXES_DATA", date_col="last-updated-date")
     
     
     # Permission Required
     # df = get_bulk_reports("GET_FLAT_FILE_SALES_TAX_DATA", startDate, endDate)
-    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_SALES_TAX_DATA", date_col="last-updated-date", safe_drop=False)
+    # dump_to_sql(df, "AMZN_GET_FLAT_FILE_SALES_TAX_DATA", date_col="last-updated-date")
 
 
 
     df = get_bulk_reports("GET_BRAND_ANALYTICS_MARKET_BASKET_REPORT", startDate, endDate, max_days=7, reportOptions=dict(reportPeriod='WEEK'))
     df['startDate'] = pd.to_datetime(df['startDate'])
     df['endDate'] = pd.to_datetime(df['endDate'])
-    dump_to_sql(df, "AMZN_BRAND_ANALYTICS_MARKET_BASKET_REPORT", date_col="startDate", safe_drop=False)
+    dump_to_sql(df, "AMZN_BRAND_ANALYTICS_MARKET_BASKET_REPORT", date_col="startDate")
 
     brand_analytics_search_terms_report_df = get_bulk_reports("GET_BRAND_ANALYTICS_SEARCH_TERMS_REPORT", startDate, endDate)
-    dump_to_sql(brand_analytics_search_terms_report_df, "AMZN_brand_analytics_search_terms_report", date_col="last-updated-date", safe_drop=False)
+    dump_to_sql(brand_analytics_search_terms_report_df, "AMZN_brand_analytics_search_terms_report", date_col="last-updated-date")
 
     brand_analytics_repeat_purchase_report_df = get_bulk_reports("GET_BRAND_ANALYTICS_REPEAT_PURCHASE_REPORT", startDate, endDate)
-    dump_to_sql(brand_analytics_repeat_purchase_report_df, "AMZN_brand_analytics_repeat_purchase_report", date_col="last-updated-date", safe_drop=False)
+    dump_to_sql(brand_analytics_repeat_purchase_report_df, "AMZN_brand_analytics_repeat_purchase_report", date_col="last-updated-date")

@@ -29,7 +29,7 @@ def initialize_driver():
         options.add_argument("--disable-dev-shm-usage")
         options.page_load_strategy = 'none'
         
-        driver = uc.Chrome(options=options, version_main=None)
+        driver = uc.Chrome(options=options, version_main=144)
         
         driver.execute_cdp_cmd('Network.emulateNetworkConditions', {
             "offline": False,
