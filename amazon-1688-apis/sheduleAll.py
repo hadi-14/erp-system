@@ -23,7 +23,7 @@ GMAIL_RECIPIENTS = [email.strip() for email in os.getenv('GMAIL_RECIPIENTS', '')
 
 # Modules to run in parallel
 MODULES = [
-    'amazon-old',
+    'amazon_old',
     'amazon_ratings_scraper',
 #    'arsp',
     'site1688',
