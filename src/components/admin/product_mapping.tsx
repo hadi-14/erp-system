@@ -1261,7 +1261,7 @@ export default function AdvancedProductMappingPage() {
 
                 {mappings.length === 0 && (
                   <div className="text-center py-8">
-                    <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
+                    {/* <DollarSign className="mx-auto h-12 w-12 text-gray-400" /> */}
                     <p className="mt-2 text-gray-500">No profit data available yet</p>
                   </div>
                 )}

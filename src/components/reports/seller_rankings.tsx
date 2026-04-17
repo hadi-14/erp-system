@@ -242,7 +242,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                 <p className="text-3xl font-bold text-orange-600">{stats.totalPricePoints}</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-xl">
-                <DollarSign className="w-8 h-8 text-orange-600" />
+                {/* <DollarSign className="w-8 h-8 text-orange-600" /> */}
               </div>
             </div>
           </div>
@@ -453,7 +453,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                       {/* Price Range */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-green-500" />
+                          {/* <DollarSign className="w-4 h-4 text-green-500" /> */}
                           <span className="font-medium text-gray-900">
                             {item.competitive_prices && item.competitive_prices.length > 0
                               ? `${formatCurrency(item.competitive_prices[0]?.price_amount, item.competitive_prices[0]?.price_currency)}`
@@ -566,7 +566,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                             {/* Competitive Prices */}
                             <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                               <div className="flex items-center gap-2 mb-4">
-                                <DollarSign className="w-5 h-5 text-green-600" />
+                                {/* <DollarSign className="w-5 h-5 text-green-600" /> */}
                                 <h4 className="font-semibold text-gray-900">Competitive Prices</h4>
                               </div>
                               <div className="space-y-3">
@@ -599,7 +599,7 @@ const AmazonSelerRaningsDashboard: React.FC = () => {
                                   ))
                                 ) : (
                                   <div className="text-center py-6 text-gray-500">
-                                    <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                    {/* <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" /> */}
                                     No competitive prices available
                                   </div>
                                 )}

@@ -314,7 +314,7 @@ export default function ProductManagement() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
+                      {/* <DollarSign className="w-4 h-4" /> */}
                       Pricing (AED)
                     </div>
                   </th>
@@ -511,7 +511,7 @@ export default function ProductManagement() {
                   {/* Pricing Section */}
                   <div className="bg-green-50/50 rounded-xl p-6 border border-green-100">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                      <DollarSign className="w-5 h-5" />
+                      {/* <DollarSign className="w-5 h-5" /> */}
                       Pricing
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

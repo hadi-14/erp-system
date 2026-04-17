@@ -330,7 +330,7 @@ export default function OrdersPage() {
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-purple-600" />
+                {/* <DollarSign className="h-8 w-8 text-purple-600" /> */}
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Value</p>
                   <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalValue)}</p>

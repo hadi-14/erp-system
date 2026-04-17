@@ -902,7 +902,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 title="Export current page to Excel"
               >
-                <DollarSign className="w-4 h-4" />
+                {/* <DollarSign className="w-4 h-4" /> */}
                 <span className="font-medium text-sm">Export Page</span>
                 {allData.length > 0 && (
                   <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-xs">
@@ -924,7 +924,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <DollarSign className="w-4 h-4" />
+                    {/* <DollarSign className="w-4 h-4" /> */}
                     <span className="font-medium text-sm">Export All</span>
                     {pagination.total > 0 && (
                       <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-xs">
@@ -1170,7 +1170,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-green-500" />
+                            {/* <DollarSign className="w-4 h-4 text-green-500" /> */}
                             <span className="font-medium text-gray-900">
                               {item.competitive_prices && item.competitive_prices.length > 0
                                 ? `${formatCurrency(item.competitive_prices[0]?.price_amount, item.competitive_prices[0]?.price_currency)}`
@@ -1529,7 +1529,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
 
                                   <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
                                     <div className="flex items-center gap-2 mb-4">
-                                      <DollarSign className="w-5 h-5 text-green-600" />
+                                      {/* <DollarSign className="w-5 h-5 text-green-600" /> */}
                                       <h4 className="font-semibold text-gray-900">Your Prices</h4>
                                     </div>
                                     <div className="space-y-3">
@@ -1562,7 +1562,7 @@ const AmazonSellerRankingsDashboard: React.FC = () => {
                                         ))
                                       ) : (
                                         <div className="text-center py-6 text-gray-500">
-                                          <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                          {/* <DollarSign className="w-8 h-8 mx-auto mb-2 opacity-30" /> */}
                                           <p className="text-sm">No competitive prices available</p>
                                         </div>
                                       )}

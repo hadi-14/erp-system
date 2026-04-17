@@ -251,7 +251,7 @@ export default function PriceEstimationPage() {
               <p className="text-blue-100 text-lg">Calculate Amazon fees and analyze profit margins for your products</p>
             </div>
             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-              <DollarSign className="w-8 h-8" />
+              {/* <DollarSign className="w-8 h-8" /> */}
             </div>
           </div>
         </div>
@@ -552,7 +552,7 @@ export default function PriceEstimationPage() {
         {/* Empty State */}
         {estimations.length === 0 && !loadingProducts && (
           <div className="text-center py-16">
-            <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            {/* <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300" /> */}
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Estimations Yet</h3>
             <p className="text-gray-600">Select a product and enter a selling price to calculate fees</p>
           </div>
